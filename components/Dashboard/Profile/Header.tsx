@@ -54,8 +54,8 @@ export default function ProfileHeader({
               {`${profile.nom} ${profile.prenoms || ''}`}
             </Text>
             {profile.nom_role && (
-              <View className="bg-gray-100 rounded-full px-2 py-0.5" style={{ backgroundColor: '#125b47' }}>
-                <Text className="text-xs">
+              <View className="bg-gray-100 rounded-full px-2 py-0.5" >
+                <Text className="text-xs" style={{ color: '#125b47' }}>
                   {profile.nom_role.charAt(0).toUpperCase() + profile.nom_role.slice(1)}
                 </Text>
               </View>
@@ -91,7 +91,7 @@ export default function ProfileHeader({
             </View>
           </View>
 
-          <View className="flex-row gap-4 items-center">
+          <View className="flex-row gap-4 justify-between mx-8">
             <View className="items-center">
               <Text className="font-semibold">{projectsCount}</Text>
               <Text className="text-gray-500 text-xs">Projets</Text>
