@@ -16,7 +16,7 @@ interface InvestmentSummaryProps {
   averageROI: number;
   ongoingProjects: number;
   completedProjects: number;
-  projectsByStatusData: Array<{ name: string; value: number; color: string }>;
+  projectsByStatusData: { name: string; value: number; color: string }[];
 }
 
 const screenWidth = Dimensions.get("window").width;
