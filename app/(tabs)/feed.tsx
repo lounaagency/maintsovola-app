@@ -1,82 +1,102 @@
 import { useState } from 'react';
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import SubNavTabs from '../../components/SubNavTabs';
-
-// Données d'exemple pour les projets
-const mockProjects = [
-  {
-    id: '1',
-    title: 'Application Mobile Innovative',
-    description: 'Une application révolutionnaire qui change la donne dans le secteur technologique.',
-    category: 'Tech',
-    funding: '45000€',
-    target: '100000€',
-    progress: 45,
-  },
-  {
-    id: '2', 
-    title: 'Restaurant Écologique',
-    description: 'Un restaurant utilisant uniquement des produits locaux et biologiques.',
-    category: 'Restauration',
-    funding: '78000€',
-    target: '150000€',
-    progress: 52,
-  },
-  {
-    id: '3',
-    title: 'Plateforme E-learning',
-    description: 'Une plateforme d\'apprentissage en ligne pour les étudiants africains.',
-    category: 'Éducation',
-    funding: '32000€',
-    target: '80000€',
-    progress: 40,
-  },
-  {
-    id: '4',
-    title: 'Startup AgriTech',
-    description: 'Solution technologique pour optimiser l\'agriculture urbaine.',
-    category: 'Agriculture',
-    funding: '65000€',
-    target: '120000€',
-    progress: 54,
-  },
-];
+import { useProjectData } from '../../hooks/use-project-data';
 
 export default function FeedScreen() {
   const tabs = ['Pour vous', 'Abonnements'];
   const [activeTab, setActiveTab] = useState('Pour vous');
+  const { projects, loading, error, toggleLike } = useProjectData({
+    followedUsersOnly: activeTab === 'Abonnements',
+    status: 'en financement'
+  });
 
-  const renderProject = ({ item }: { item: typeof mockProjects[0] }) => (
+  const renderProject = ({ item }: { item: any }) => (
     <View style={styles.projectCard}>
+      {item.images?.length > 0 && (
+        <Image source={{ uri: item.images[0] }} style={styles.projectImage} resizeMode="cover" />
+      )}
       <View style={styles.projectHeader}>
-        <Text style={styles.projectTitle}>{item.title}</Text>
-        <Text style={styles.projectCategory}>{item.category}</Text>
+        <View style={styles.projectTitleContainer}>
+          <Text style={styles.projectTitle}>{item.title}</Text>
+          <Text style={styles.projectLocation}>
+            {item.location?.commune}, {item.location?.district}
+          </Text>
+        </View>
+        <View style={styles.projectOwner}>
+          {item.farmer?.avatar && (
+            <Image source={{ uri: item.farmer.avatar }} style={styles.ownerPhoto} />
+          )}
+          <Text style={styles.ownerName}>{item.farmer?.name}</Text>
+        </View>
       </View>
-      <Text style={styles.projectDescription}>{item.description}</Text>
-      
+      <Text style={styles.projectDescription} numberOfLines={3}>
+        {item.description}
+      </Text>
+      <View style={styles.culturesContainer}>
+        <Text style={styles.culturesLabel}>Culture:</Text>
+        <Text style={styles.culturesText}>{item.cultivationType}</Text>
+      </View>
       <View style={styles.fundingInfo}>
         <View style={styles.fundingRow}>
           <Text style={styles.fundingText}>
-            <Text style={styles.fundingAmount}>{item.funding}</Text> collectés sur {item.target}
+            <Text style={styles.fundingAmount}>
+              {item.currentFunding?.toLocaleString('fr-FR')}€
+            </Text>
+            {' / '}
+            {item.fundingGoal?.toLocaleString('fr-FR')}€
           </Text>
-          <Text style={styles.progressText}>{item.progress}%</Text>
+          <Text style={styles.progressText}>
+            {item.isFullyFunded ? 'Financé ✓' : `${Math.round((item.currentFunding / item.fundingGoal) * 100)}%`}
+          </Text>
         </View>
         <View style={styles.progressBar}>
-          <View 
-            style={[styles.progressFill, { width: `${item.progress}%` }]} 
+          <View
+            style={[
+              styles.progressFill,
+              {
+                width: `${Math.min((item.currentFunding / item.fundingGoal) * 100, 100)}%`,
+                backgroundColor: item.isFullyFunded ? '#10B981' : '#3B82F6'
+              }
+            ]}
           />
+        </View>
+        <View style={styles.actionsRow}>
+          <TouchableOpacity style={styles.actionButton} onPress={() => toggleLike(item.id, item.isLiked)}>
+            <Text style={[styles.actionText, item.isLiked && styles.likedText]}>
+              {item.isLiked ? '❤️' : '🤍'} {item.likes}
+            </Text>
+          </TouchableOpacity>
+          <Text style={styles.actionText}>💬 {item.comments}</Text>
+          <Text style={styles.actionText}>{item.cultivationArea}ha</Text>
         </View>
       </View>
     </View>
   );
 
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <ActivityIndicator size="large" color="#3B82F6" />
+        <Text style={styles.loadingText}>Chargement des projets...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, styles.centerContent]}>
+        <Text style={styles.errorText}>Erreur: {error}</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Projets en financement</Text>
       <SubNavTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
-      
       <FlatList
-        data={mockProjects}
+        data={projects}
         renderItem={renderProject}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
@@ -87,89 +107,44 @@ export default function FeedScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 16,
-  },
-  listContainer: {
-    paddingBottom: 20,
-  },
+  container: { flex: 1, padding: 16 },
+  centerContent: { justifyContent: 'center', alignItems: 'center' },
+  title: { fontSize: 18, fontWeight: 'bold', marginBottom: 16 },
+  loadingText: { marginTop: 10, fontSize: 16, color: '#6B7280' },
+  errorText: { fontSize: 16, color: '#EF4444', textAlign: 'center' },
+  listContainer: { paddingBottom: 20 },
   projectCard: {
     backgroundColor: 'white',
     borderRadius: 12,
-    padding: 16,
     marginBottom: 16,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 3.84,
     elevation: 5,
-  },
-  projectHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  projectTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    flex: 1,
-    marginRight: 8,
-  },
-  projectCategory: {
-    backgroundColor: '#E5E7EB',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    fontSize: 12,
-    color: '#6B7280',
-  },
-  projectDescription: {
-    fontSize: 14,
-    color: '#6B7280',
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  fundingInfo: {
-    marginTop: 8,
-  },
-  fundingRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  fundingText: {
-    fontSize: 14,
-    color: '#6B7280',
-  },
-  fundingAmount: {
-    fontWeight: '600',
-    color: '#000',
-  },
-  progressText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#10B981',
-  },
-  progressBar: {
-    height: 6,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 3,
     overflow: 'hidden',
   },
-  progressFill: {
-    height: '100%',
-    backgroundColor: '#10B981',
-    borderRadius: 3,
-  },
+  projectImage: { width: '100%', height: 200 },
+  projectHeader: { padding: 16, paddingBottom: 8, flexDirection: 'row', justifyContent: 'space-between' },
+  projectTitleContainer: { marginBottom: 8 },
+  projectTitle: { fontSize: 18, fontWeight: '600', marginBottom: 4 },
+  projectLocation: { fontSize: 14, color: '#6B7280' },
+  projectOwner: { flexDirection: 'row', alignItems: 'center' },
+  ownerPhoto: { width: 32, height: 32, borderRadius: 16, marginRight: 8 },
+  ownerName: { fontSize: 14, fontWeight: '500', color: '#374151' },
+  projectDescription: { fontSize: 14, color: '#6B7280', lineHeight: 20, paddingHorizontal: 16, marginBottom: 12 },
+  culturesContainer: { paddingHorizontal: 16, marginBottom: 12 },
+  culturesLabel: { fontSize: 12, fontWeight: '600', color: '#374151', marginBottom: 4 },
+  culturesText: { fontSize: 12, color: '#6B7280', backgroundColor: '#F3F4F6', padding: 8, borderRadius: 6 },
+  fundingInfo: { padding: 16 },
+  fundingRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 },
+  fundingText: { fontSize: 14, color: '#6B7280' },
+  fundingAmount: { fontWeight: '600', color: '#000' },
+  progressText: { fontSize: 14, fontWeight: '600', color: '#10B981' },
+  progressBar: { height: 6, backgroundColor: '#E5E7EB', borderRadius: 3, overflow: 'hidden', marginBottom: 12 },
+  progressFill: { height: '100%', borderRadius: 3 },
+  actionsRow: { flexDirection: 'row', alignItems: 'center', gap: 16 },
+  actionButton: { padding: 4 },
+  actionText: { fontSize: 14, color: '#6B7280' },
+  likedText: { color: '#EF4444' },
 });
