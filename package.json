@@ -26,6 +26,7 @@
     "expo-status-bar": "~2.2.3",
     "expo-system-ui": "~5.0.6",
     "expo-web-browser": "~14.2.0",
+    "lucide-react-native": "^0.526.0",
     "nativewind": "^4.1.23",
     "react": "19.0.0",
     "react-dom": "19.0.0",
@@ -37,6 +38,7 @@
     "react-native-safe-area-context": "^5.4.0",
     "react-native-screens": "~4.11.1",
     "react-native-url-polyfill": "^2.0.0",
+    "react-native-svg": "^15.12.0",
     "react-native-web": "^0.20.0"
   },
   "devDependencies": {
