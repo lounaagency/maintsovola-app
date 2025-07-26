@@ -54,11 +54,7 @@ export default function ProfileHeader({
               {`${profile.nom} ${profile.prenoms || ''}`}
             </Text>
             {profile.nom_role && (
-<<<<<<< HEAD
-              <View className="bg-gray-100 rounded-full px-2 py-0.5" >
-=======
               <View className="bg-black-100 rounded-full px-2 py-0.5" >
->>>>>>> 5d2a836 (update style)
                 <Text className="text-xs" style={{ color: '#125b47' }}>
                   {profile.nom_role.charAt(0).toUpperCase() + profile.nom_role.slice(1)}
                 </Text>

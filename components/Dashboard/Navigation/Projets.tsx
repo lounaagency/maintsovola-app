@@ -1,12 +1,60 @@
-import { View, Text } from 'react-native';
+import { Stack } from 'expo-router';
 
-export default function Projets() {
+import { StyleSheet, View } from 'react-native';
+import ProjectsSummary from '~/components/ProjectsSummary';
+import { ProjectsSummaryProps } from '~/components/ProjectsSummary';
+
+import { ScreenContent } from '~/components/ScreenContent';
+
+export const simpleProjectsSummaryData: ProjectsSummaryProps = {
+  totalProjects: 5,
+  totalArea: 10.5,
+  totalFunding: 150000,
+  totalProfit: 75000,
+  ownerProfit: 30000,
+  projectsByStatus: {
+    enFinancement: {
+      count: 2,
+      area: 4.0,
+      funding: 50000,
+      profit: 20000,
+      ownerProfit: 8000,
+      cultures: [], // No cultures for simplicity
+    },
+    enCours: {
+      count: 2,
+      area: 5.5,
+      funding: 70000,
+      profit: 40000,
+      ownerProfit: 16000,
+      cultures: [],
+    },
+    termine: {
+      count: 1,
+      area: 1.0,
+      funding: 30000,
+      profit: 15000,
+      ownerProfit: 6000,
+      cultures: [],
+    },
+  },
+  projectsByCulture: [], // No overall culture data for simplicity
+};
+
+export default function Home() {
   return (
-    <View className="flex-1 p-4 bg-gray-50">
-      <Text className="text-lg font-bold mb-4">Mes Projets</Text>
-      <View className="bg-white p-4 rounded-lg">
-        <Text>Liste des projets...</Text>
+    <>
+      <Stack.Screen options={{ title: 'Projets' }} />
+      <View className='flex-1'>
+        <ProjectsSummary {...simpleProjectsSummaryData}  />
       </View>
-    </View>
+    </>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 24,
+  },
+});
