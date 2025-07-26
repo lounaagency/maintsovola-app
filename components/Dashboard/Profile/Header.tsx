@@ -41,8 +41,8 @@ export default function ProfileHeader({
               accessibilityLabel="Photo de profil"
             />
           ) : (
-            <View className="w-24 h-24 rounded-full bg-gray-100 justify-center items-center">
-              <Ionicons name="person" size={48} color="gray" />
+            <View className="w-24 h-24 rounded-full bg-black-100 justify-center items-center">
+              <Ionicons name="person" size={48} color="black" />
             </View>
           )}
         </View>
@@ -54,7 +54,11 @@ export default function ProfileHeader({
               {`${profile.nom} ${profile.prenoms || ''}`}
             </Text>
             {profile.nom_role && (
+<<<<<<< HEAD
               <View className="bg-gray-100 rounded-full px-2 py-0.5" >
+=======
+              <View className="bg-black-100 rounded-full px-2 py-0.5" >
+>>>>>>> 5d2a836 (update style)
                 <Text className="text-xs" style={{ color: '#125b47' }}>
                   {profile.nom_role.charAt(0).toUpperCase() + profile.nom_role.slice(1)}
                 </Text>
@@ -63,13 +67,13 @@ export default function ProfileHeader({
           </View>
 
           {profile.bio && (
-            <Text className="text-gray-500 mb-2">{profile.bio}</Text>
+            <Text className="text-black-500 mb-2">{profile.bio}</Text>
           )}
 
           <View className="flex-row flex-wrap gap-x-4 gap-y-2 mb-3">
             <View className="flex-row items-center">
               <Feather name="map-pin" size={14} color="#125b47" />
-              <Text className="text-gray-500 text-sm ml-1">
+              <Text className="text-black-500 text-sm ml-1">
                 {profile.adresse || 'Non renseigné'}
               </Text>
             </View>
@@ -77,7 +81,7 @@ export default function ProfileHeader({
             {profile.telephone && (
               <View className="flex-row items-center">
                 <Feather name="phone" size={14} color="#125b47" />
-                <Text className="text-gray-500 text-sm ml-1">
+                <Text className="text-black-500 text-sm ml-1">
                   {profile.telephone}
                 </Text>
               </View>
@@ -85,7 +89,7 @@ export default function ProfileHeader({
 
             <View className="flex-row items-center">
               <Feather name="mail" size={14} color="#125b47" />
-              <Text className="text-gray-500 text-sm ml-1">
+              <Text className="text-black-500 text-sm ml-1">
                 {profile.email}
               </Text>
             </View>
@@ -93,16 +97,16 @@ export default function ProfileHeader({
 
           <View className="flex-row gap-4 justify-between mx-8">
             <View className="items-center">
-              <Text className="font-semibold">{projectsCount}</Text>
-              <Text className="text-gray-500 text-xs">Projets</Text>
+              <Text className="font-semibold" style={{ color: '#125b47' }}>{projectsCount}</Text>
+              <Text className="text-yellow-500 text-xs">Projets</Text>
             </View>
             <View className="items-center">
-              <Text className="font-semibold">{followersCount}</Text>
-              <Text className="text-gray-500 text-xs">Abonnés</Text>
+              <Text className="font-semibold" style={{ color: '#125b47' }}>{followersCount}</Text>
+              <Text className="text-yellow-500 text-xs">Abonnés</Text>
             </View>
             <View className="items-center">
-              <Text className="font-semibold">{followingCount}</Text>
-              <Text className="text-gray-500 text-xs">Abonnements</Text>
+              <Text className="font-semibold" style={{ color: '#125b47' }}>{followingCount}</Text>
+              <Text className="text-yellow-500 text-xs">Abonnements</Text>
             </View>
           </View>
         </View>
@@ -110,10 +114,36 @@ export default function ProfileHeader({
 
       {/* Actions */}
       <View className="flex-row gap-3 mt-4">
-          <TouchableOpacity className="flex-1 flex-row items-center justify-center py-2 border border-#125b47 rounded-lg" style={{ borderColor: '#125b47', borderWidth: 1 }}>
+        {isCurrentUser ? (
+          <TouchableOpacity className="flex-1 flex-row items-center justify-center py-2 border rounded-lg" style={{ borderColor: '#125b47' }}>
             <Feather name="edit" size={16} color="#125b47" />
             <Text className="font-bold ml-2" style={{ color: '#125b47' }}>Modifier</Text>
           </TouchableOpacity>
+        ) : (
+          <>
+            <TouchableOpacity
+              className={`flex-1 flex-row items-center justify-center py-2 rounded-lg ${
+                isFollowing ? 'border border-black-300' : 'bg-black'
+              }`}
+              onPress={onFollowToggle}
+            >
+              <Feather
+                name="users"
+                size={16}
+                color={isFollowing ? 'black' : 'white'}
+              />
+              <Text className={`font-bold ml-2 ${
+                isFollowing ? 'text-black' : 'text-white'
+              }`}>
+                {isFollowing ? 'Abonné' : 'Suivre'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity className="flex-1 flex-row items-center justify-center py-2 border border-black-300 rounded-lg">
+              <Feather name="mail" size={16} color="black" />
+              <Text className="font-bold ml-2">Message</Text>
+            </TouchableOpacity>
+          </>
+        )}
       </View>
     </View>
   );
