@@ -1,20 +1,19 @@
-
 import { useState, useEffect } from 'react';
-import { 
-  getAllProjects, 
-  getFilteredProjects, 
+import {
+  getAllProjects,
+  getFilteredProjects,
   getProjectById,
   getProjetctFromFollowing,
-  postLikeProject 
+  postLikeProject,
 } from '~/services/feeds.service';
 
 // Types pour les projets (à définir selon vos besoins)
-interface AgriculturalProject {
-  id: string;
+export interface AgriculturalProject {
+  id: number;
   title: string;
   description: string;
   farmer: {
-    id: number;
+    id: string;
     name: string;
     username: string;
     avatar: string;
@@ -38,11 +37,16 @@ interface AgriculturalProject {
   likes: number;
   comments: number;
   shares: number;
-  images: string[];
+  photos: string[];
   isLiked: boolean;
   status: 'en financement' | 'financé' | 'terminé';
-  technicianId: number;
+  technicianId: string;
   cultures: string;
+  terrain_id: number;
+  terrain: {
+    id_terrain: number;
+    nom_terrain: string;
+  };
 }
 
 export type ProjectFilter = {
@@ -54,46 +58,48 @@ export type ProjectFilter = {
   district?: string;
   commune?: string;
   culture?: string;
-}
+};
 
 export const useProjectData = (filters: ProjectFilter = {}) => {
   const [projects, setProjects] = useState<AgriculturalProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Pour le moment, on simule un utilisateur connecté
   // Vous pouvez remplacer cela par votre système d'authentification
   const user = { id: 'current-user-id' };
 
-  const toggleLike = async (projectId: string, isCurrentlyLiked: boolean) => {
+  const toggleLike = async (projectId: number, isCurrentlyLiked: boolean) => {
     if (!user) {
-      console.log("Vous devez être connecté pour aimer un projet");
+      console.log('Vous devez être connecté pour aimer un projet');
       return;
     }
-    
+
     try {
       const action = isCurrentlyLiked ? 'dislike' : 'like';
       const data = {
         id_utilisateur: user.id,
-        id_projet: parseInt(projectId)
+        id_projet: projectId,
       };
-      
-      await postLikeProject(projectId, action, data);
-      
+
+      await postLikeProject(projectId, data);
+
       // Mise à jour optimiste de l'état local
-      setProjects(projects.map(project => {
-        if (project.id === projectId) {
-          return {
-            ...project,
-            likes: isCurrentlyLiked ? project.likes - 1 : project.likes + 1,
-            isLiked: !isCurrentlyLiked
-          };
-        }
-        return project;
-      }));
+      setProjects(
+        projects.map((project) => {
+          if (project.id === projectId) {
+            return {
+              ...project,
+              likes: isCurrentlyLiked ? project.likes - 1 : project.likes + 1,
+              isLiked: !isCurrentlyLiked,
+            };
+          }
+          return project;
+        })
+      );
     } catch (error) {
-      console.error("Erreur lors de la gestion du like:", error);
-      console.log("Erreur lors de la gestion du like");
+      console.error('Erreur lors de la gestion du like:', error);
+      console.log('Erreur lors de la gestion du like');
     }
   };
 
@@ -117,40 +123,41 @@ export const useProjectData = (filters: ProjectFilter = {}) => {
           region: filters.region,
           district: filters.district,
           commune: filters.commune,
-          culture: filters.culture
+          culture: filters.culture,
         };
         rawProjects = await getFilteredProjects(filterObject);
       } else {
         // Récupérer tous les projets
         rawProjects = await getAllProjects();
       }
-
       // Transformer les données brutes en format AgriculturalProject
       const transformedProjects: AgriculturalProject[] = (rawProjects || []).map((projet: any) => {
         const totalFarmingCost = projet.cout_total;
-        const expectedYieldLabel = projet.rendements_detail || "N/A";
+        const expectedYieldLabel = projet.rendements_detail || 'N/A';
         const totalEstimatedRevenue = projet.revenu_total;
         const totalProfit = totalEstimatedRevenue - totalFarmingCost;
 
         const farmer = {
           id: projet.id_tantsaha,
           name: `${projet.nom_tantsaha} ${projet.prenoms_tantsaha || ''}`.trim(),
-          username: projet.nom_tantsaha?.toLowerCase()?.replace(/\s+/g, '') || "",
+          username: projet.nom_tantsaha?.toLowerCase()?.replace(/\s+/g, '') || '',
           avatar: projet.photo_profil,
         };
 
         const likes = projet.nombre_likes || 0;
         const commentCount = projet.nombre_commentaires || 0;
 
-        const locationRegion = projet.nom_region || "Non spécifié";
-        const locationDistrict = projet.nom_district || "Non spécifié";
-        const locationCommune = projet.nom_commune || "Non spécifié";
-        const cultivationType = projet.cultures || "Non spécifié";
+        const locationRegion = projet.nom_region || 'Non spécifié';
+        const locationDistrict = projet.nom_district || 'Non spécifié';
+        const locationCommune = projet.nom_commune || 'Non spécifié';
+        const cultivationType = projet.cultures || 'Non spécifié';
 
         return {
           id: projet.id_projet.toString(),
           title: projet.titre || `Projet de culture de ${projet.cultures}`,
-          description: projet.description || `Projet de culture de ${projet.cultures} sur un terrain de ${projet.surface_ha} hectares.`,
+          description:
+            projet.description ||
+            `Projet de culture de ${projet.cultures} sur un terrain de ${projet.surface_ha} hectares.`,
           farmer,
           location: {
             region: locationRegion,
@@ -171,19 +178,21 @@ export const useProjectData = (filters: ProjectFilter = {}) => {
           likes,
           comments: commentCount,
           shares: 0,
-          images: projet.photos || [],
           isLiked: false, // Sera mis à jour plus tard si nécessaire
           status: projet.statut as AgriculturalProject['status'],
           technicianId: projet.id_technicien,
           cultures: projet.cultures,
+          photos: projet.photos || [],
+          terrain: projet.terrain,
+          terrain_id: projet.terrain_id,
         };
       });
 
       setProjects(transformedProjects);
     } catch (err) {
-      console.error("Erreur lors de la récupération des projets:", err);
-      setError(err instanceof Error ? err.message : "Erreur inconnue");
-      console.log("Erreur lors du chargement des projets");
+      console.error('Erreur lors de la récupération des projets:', err);
+      setError(err instanceof Error ? err.message : 'Erreur inconnue');
+      console.log('Erreur lors du chargement des projets');
     } finally {
       setLoading(false);
     }
@@ -199,7 +208,7 @@ export const useProjectData = (filters: ProjectFilter = {}) => {
     filters.region,
     filters.district,
     filters.commune,
-    filters.culture
+    filters.culture,
   ]);
 
   return {
@@ -207,6 +216,6 @@ export const useProjectData = (filters: ProjectFilter = {}) => {
     loading,
     error,
     toggleLike,
-    refetch: fetchProjects
+    refetch: fetchProjects,
   };
 };

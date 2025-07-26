@@ -1,16 +1,28 @@
 import { Stack } from 'expo-router';
-
-import { StyleSheet, View } from 'react-native';
-
-import { ScreenContent } from '~/components/ScreenContent';
+import { StyleSheet, View, Alert } from 'react-native';
+import FeedList from '~/components/FeedList';
 
 export default function Home() {
+  const handleLike = (projectId: string) => {
+    console.log('Liked project:', projectId);
+  };
+
+  const handleComment = (projectId: string) => {
+    console.log('Comment on project:', projectId);
+  };
+
+  const handleShare = (projectId: string) => {
+    Alert.alert('Partage', `Partager le projet ${projectId}`);
+  };
+
+  const handleInvest = (projectId: string) => {
+    Alert.alert('Investissement', `Investir dans le projet ${projectId}`);
+  };
+
   return (
     <>
-      <Stack.Screen options={{ title: 'Tab One' }} />
-      <View style={styles.container}>
-        <ScreenContent path="app/(tabs)/index.tsx" title="Tab One" />
-      </View>
+      <Stack.Screen options={{ title: 'Projets Agricoles' }} />
+      <View style={styles.container}></View>
     </>
   );
 }
@@ -18,6 +30,5 @@ export default function Home() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
   },
 });
