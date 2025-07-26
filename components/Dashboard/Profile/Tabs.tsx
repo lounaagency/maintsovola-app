@@ -11,15 +11,16 @@ export default function ProfileTabs() {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#000',
+        tabBarActiveTintColor: '#125b47',
         tabBarInactiveTintColor: 'gray',
-        tabBarIndicatorStyle: { backgroundColor: '#000' },
+        tabBarIndicatorStyle: { backgroundColor: '#125b47' },
         tabBarLabelStyle: { fontSize: 12, fontWeight: 'bold' },
         tabBarStyle: { backgroundColor: 'white' },
+        // 
       }}
     >
       <Tab.Screen
-        name="Investissement"
+        name="Poketra"
         component={Investissement}
         options={{
           tabBarIcon: ({ color }) => (
