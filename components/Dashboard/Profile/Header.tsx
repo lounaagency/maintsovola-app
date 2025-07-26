@@ -31,7 +31,7 @@ export default function ProfileHeader({
 }) {
   return (
     <View className="p-4">
-      <View className="flex-col items-start">
+      <View className="flex-col items-center">
         {/* Avatar */}
         <View className="mr-4">
           {profile.photo_profil ? (
@@ -48,13 +48,13 @@ export default function ProfileHeader({
         </View>
 
         {/* Infos profil */}
-        <View className="">
-          <View className="flex-row items-center mb-1">
+        <View className="m-4">
+          <View className="flex-col items-center mb-4 ">
             <Text className="text-2xl font-bold mr-2">
               {`${profile.nom} ${profile.prenoms || ''}`}
             </Text>
             {profile.nom_role && (
-              <View className="bg-gray-100 rounded-full px-2 py-0.5">
+              <View className="bg-gray-100 rounded-full px-2 py-0.5" style={{ backgroundColor: '#125b47' }}>
                 <Text className="text-xs">
                   {profile.nom_role.charAt(0).toUpperCase() + profile.nom_role.slice(1)}
                 </Text>
@@ -68,7 +68,7 @@ export default function ProfileHeader({
 
           <View className="flex-row flex-wrap gap-x-4 gap-y-2 mb-3">
             <View className="flex-row items-center">
-              <Feather name="map-pin" size={14} color="gray" />
+              <Feather name="map-pin" size={14} color="#125b47" />
               <Text className="text-gray-500 text-sm ml-1">
                 {profile.adresse || 'Non renseigné'}
               </Text>
@@ -76,7 +76,7 @@ export default function ProfileHeader({
 
             {profile.telephone && (
               <View className="flex-row items-center">
-                <Feather name="phone" size={14} color="gray" />
+                <Feather name="phone" size={14} color="#125b47" />
                 <Text className="text-gray-500 text-sm ml-1">
                   {profile.telephone}
                 </Text>
@@ -84,14 +84,14 @@ export default function ProfileHeader({
             )}
 
             <View className="flex-row items-center">
-              <Feather name="mail" size={14} color="gray" />
+              <Feather name="mail" size={14} color="#125b47" />
               <Text className="text-gray-500 text-sm ml-1">
                 {profile.email}
               </Text>
             </View>
           </View>
 
-          <View className="flex-row gap-4">
+          <View className="flex-row gap-4 items-center">
             <View className="items-center">
               <Text className="font-semibold">{projectsCount}</Text>
               <Text className="text-gray-500 text-xs">Projets</Text>
@@ -110,36 +110,10 @@ export default function ProfileHeader({
 
       {/* Actions */}
       <View className="flex-row gap-3 mt-4">
-        {isCurrentUser ? (
-          <TouchableOpacity className="flex-1 flex-row items-center justify-center py-2 border border-gray-300 rounded-lg">
-            <Feather name="edit" size={16} color="black" />
-            <Text className="font-bold ml-2">Modifier</Text>
+          <TouchableOpacity className="flex-1 flex-row items-center justify-center py-2 border border-#125b47 rounded-lg" style={{ borderColor: '#125b47', borderWidth: 1 }}>
+            <Feather name="edit" size={16} color="#125b47" />
+            <Text className="font-bold ml-2" style={{ color: '#125b47' }}>Modifier</Text>
           </TouchableOpacity>
-        ) : (
-          <>
-            <TouchableOpacity
-              className={`flex-1 flex-row items-center justify-center py-2 rounded-lg ${
-                isFollowing ? 'border border-gray-300' : 'bg-black'
-              }`}
-              onPress={onFollowToggle}
-            >
-              <Feather
-                name="users"
-                size={16}
-                color={isFollowing ? 'black' : 'white'}
-              />
-              <Text className={`font-bold ml-2 ${
-                isFollowing ? 'text-black' : 'text-white'
-              }`}>
-                {isFollowing ? 'Abonné' : 'Suivre'}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity className="flex-1 flex-row items-center justify-center py-2 border border-gray-300 rounded-lg">
-              <Feather name="mail" size={16} color="black" />
-              <Text className="font-bold ml-2">Message</Text>
-            </TouchableOpacity>
-          </>
-        )}
       </View>
     </View>
   );
