@@ -63,7 +63,7 @@ export const useProjectData = (filters: ProjectFilter = {}) => {
   
   // Pour le moment, on simule un utilisateur connecté
   // Vous pouvez remplacer cela par votre système d'authentification
-  const user = { id: 'current-user-id' };
+  const user = { id: '28ff57b7-fb92-4593-b239-5c56b0f44560' };
 
   const toggleLike = async (projectId: string, isCurrentlyLiked: boolean) => {
     if (!user) {

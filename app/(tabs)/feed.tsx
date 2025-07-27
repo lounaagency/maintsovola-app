@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { View, Text, FlatList, StyleSheet, Image, TouchableOpacity, ActivityIndicator } from 'react-native';
 import SubNavTabs from '../../components/SubNavTabs';
 import { useProjectData } from '../../hooks/use-project-data';
+import FilterContainer from '~/components/FilterContainer';
 
 export default function FeedScreen() {
   const tabs = ['Pour vous', 'Abonnements'];
@@ -10,6 +11,12 @@ export default function FeedScreen() {
     followedUsersOnly: activeTab === 'Abonnements',
     status: 'en financement'
   });
+
+  const handleRemoveFilter = (label: string) => {
+    // Logique pour supprimer un filtre
+  };
+
+  const filters = ['Région', 'District', 'Commune'];
 
   const renderProject = ({ item }: { item: any }) => (
     <View style={styles.projectCard}>
@@ -95,6 +102,7 @@ export default function FeedScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Projets en financement</Text>
       <SubNavTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
+      <FilterContainer labels={filters} onRemove={handleRemoveFilter} />
       <FlatList
         data={projects}
         renderItem={renderProject}
