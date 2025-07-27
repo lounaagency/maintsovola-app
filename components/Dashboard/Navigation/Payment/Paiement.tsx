@@ -1,12 +1,19 @@
-import { View, Text } from 'react-native';
+import { useUserInvestments } from '~/hooks/useUserInvestissement';
+
+interface InvestmentListProps {
+  userId: string;
+}
+
+const InvestmentList = ({ userId }: InvestmentListProps) => {
+  const { investments, pendingPayments, loading } = useUserInvestments(userId);
+
+  console.log('Investissements:', investments);
+  console.log('Paiements en attente  eeee:', pendingPayments);
+};
 
 export default function Paiement() {
+  console.log('Paiement component rendered');
   return (
-    <View className="flex-1 p-4 bg-gray-50">
-      <Text className="text-lg font-bold mb-4">Mes Paiment</Text>
-      <View className="bg-white p-4 rounded-lg">
-        <Text>Liste des projets...</Text>
-      </View>
-    </View>
+    InvestmentList({ userId: '28ff57b7-fb92-4593-b239-5c56b0f44560' })
   );
 }

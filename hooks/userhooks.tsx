@@ -54,7 +54,7 @@ export const useProjectsCount = (userId: string) => {
         setProjectsCount(0);
       } else {
         setProjectsCount(count || 0);
-        console.log('Nombre de projets:', count);
+        // console.log('Nombre de projets:', count);
       }
       setLoading(false);
     };
@@ -81,7 +81,7 @@ export const useFollowersCount = (userId: string) => {
         setFollowersCount(0);
       } else {
         setFollowersCount(count || 0);
-        console.log('Nombre de followers:', count);
+        // console.log('Nombre de followers:', count);
       }
       setLoading(false);
     };
@@ -108,7 +108,7 @@ export const useFollowingCount = (userId: string) => {
         setFollowingCount(0);
       } else {
         setFollowingCount(count || 0);
-        console.log('Nombre de following:', count);
+        // console.log('Nombre de following:', count);
       }
       setLoading(false);
     };
