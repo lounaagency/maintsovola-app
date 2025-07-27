@@ -1,58 +1,120 @@
 import { Stack } from 'expo-router';
+import { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, ActivityIndicator } from 'react-native';
+import ProjectsSummary, { ProjectsSummaryProps } from '~/components/ProjectsSummary';
+import { useTotalSurfaceForTantsaha } from '~/hooks/useTotalSurfaceForTantsaha';
+import { useTotalProjectNumberForTantsaha } from '~/hooks/useTotalProjectNumberForTantsaha'; // Assumed to return 'count'
+import { useTotalFundingForTantsaha } from '~/hooks/useTotalFundingForTantsaha';
 
-import { StyleSheet, View } from 'react-native';
-import ProjectsSummary from '~/components/ProjectsSummary';
-import { ProjectsSummaryProps } from '~/components/ProjectsSummary';
-
-
-
-export const simpleProjectsSummaryData: ProjectsSummaryProps = {
-  totalProjects: 5,
-  totalArea: 10.5,
-  totalFunding: 150000,
-  totalProfit: 75000,
-  ownerProfit: 30000,
+const defaultProjectsSummaryData: ProjectsSummaryProps = {
+  totalProjects: 0,
+  totalArea: 0,
+  totalFunding: 0,
+  totalProfit: 0,
+  ownerProfit: 0,
   projectsByStatus: {
-    enFinancement: {
-      count: 2,
-      area: 4.0,
-      funding: 50000,
-      profit: 20000,
-      ownerProfit: 8000,
-      cultures: [], // No cultures for simplicity
-    },
-    enCours: {
-      count: 2,
-      area: 5.5,
-      funding: 70000,
-      profit: 40000,
-      ownerProfit: 16000,
-      cultures: [],
-    },
-    termine: {
-      count: 1,
-      area: 1.0,
-      funding: 30000,
-      profit: 15000,
-      ownerProfit: 6000,
-      cultures: [],
-    },
+    enFinancement: { count: 0, area: 0, funding: 0, profit: 0, ownerProfit: 0, cultures: [] },
+    enCours: { count: 0, area: 0, funding: 0, profit: 0, ownerProfit: 0, cultures: [] },
+    termine: { count: 0, area: 0, funding: 0, profit: 0, ownerProfit: 0, cultures: [] },
   },
-  projectsByCulture: [], // No overall culture data for simplicity
+  projectsByCulture: [],
 };
 
-export default function Home() {
+const Projets = () => {
+  const currentTantsahaId = '28ff57b7-fb92-4593-b239-5c56b0f44560';
+
+  // Hook 1: Total Surface Area
+  const { totalSurface, loading: loadingSurface, error: errorSurface } = useTotalSurfaceForTantsaha(currentTantsahaId);
+
+  // Hook 2: Total Project Number
+  // FIX: Destructure 'count' and alias it to 'totalProjectCount' for consistency
+  const { totalProject: totalProjectCount, loading: loadingProjectCount, error: errorProjectCount } = useTotalProjectNumberForTantsaha(currentTantsahaId);
+
+  // Hook 3: Total Funding
+  const { totalFunding, loading: loadingFunding, error: errorFunding } = useTotalFundingForTantsaha(currentTantsahaId);
+
+  const [summaryData, setSummaryData] = useState<ProjectsSummaryProps>(defaultProjectsSummaryData);
+
+  // Combine ALL loading states
+  const isLoading = loadingSurface || loadingProjectCount || loadingFunding;
+
+  // Combine ALL error states
+  const hasError = errorSurface || errorProjectCount || errorFunding;
+
+  // useEffect to update summaryData once all pieces of data are loaded
+  useEffect(() => {
+    // Only update if all hooks have finished loading AND their data is not null
+    // AND there are no errors from any hook
+    if (
+      !isLoading && // Use combined isLoading for conciseness
+      !hasError &&   // Only update summaryData if there are no errors
+      totalSurface !== null &&
+      totalProjectCount !== null && // Use totalProjectCount
+      totalFunding !== null
+    ) {
+      setSummaryData(prevData => ({
+        ...prevData,
+        totalArea: totalSurface,
+        totalProjects: totalProjectCount, // FIX: Use totalProjectCount
+        totalFunding: totalFunding,
+      }));
+    }
+  }, [
+    totalSurface, totalProjectCount, totalFunding, // Data values
+    isLoading, // Combined loading state
+    hasError // Combined error state (optional, but good for robust reactivity)
+  ]);
+
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0000ff" />
+        <Text>Loading project summary...</Text>
+      </View>
+    );
+  }
+
+  if (hasError) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>Error loading data:</Text>
+        {errorSurface && <Text style={styles.errorText}>- Surface data: {errorSurface}</Text>}
+        {errorProjectCount && <Text style={styles.errorText}>- Project count data: {errorProjectCount}</Text>}
+        {errorFunding && <Text style={styles.errorText}>- Funding data: {errorFunding}</Text>}
+        <Text style={styles.errorText}>Please try again later.</Text>
+      </View>
+    );
+  }
+
   return (
     <>
       <Stack.Screen options={{ title: 'Projets' }} />
       <View className='flex-1'>
-        <ProjectsSummary {...simpleProjectsSummaryData}  />
+        <ProjectsSummary {...summaryData} />
       </View>
     </>
   );
 }
+export default Projets;
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: 'red',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
   container: {
     flex: 1,
     padding: 24,
