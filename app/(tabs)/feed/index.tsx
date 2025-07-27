@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import SubNavTabs from '../../components/SubNavTabs';
-import { useProjectData } from '../../hooks/use-project-data';
-import FeedList from '@/components/FeedList';
+import SubNavTabs from '~/components/SubNavTabs';
+import { useProjectData } from '~/hooks/use-project-data';
+import FeedList from '~/components/FeedList';
 
 export default function FeedScreen() {
   const tabs = ['Pour vous', 'Abonnements'];

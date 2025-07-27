@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { StyleSheet, View, Text, Image, TouchableOpacity, Dimensions } from 'react-native';
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons';
-import { AgriculturalProject } from '@/hooks/use-project-data';
-import { useProjectInteractions } from '@/hooks/use-project-interactions';
+import { AgriculturalProject } from '~/hooks/use-project-data';
+import { useProjectInteractions } from '~/hooks/use-project-interactions';
 import CommentsSection from './CommentsSection';
 
 interface FeedCardProps {
