@@ -1,38 +1,67 @@
-import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons';
+import type React from "react"
+import { TouchableOpacity, View } from "react-native"
+import { MaterialIcons } from "@expo/vector-icons"
 
 interface NavProfileItemProps {
-  id: string;
-  isActive: boolean;
-  onPress: (id: string) => void;
+  id: string
+  isActive: boolean
+  onPress: (id: string) => void
 }
 
 const NavProfileItem: React.FC<NavProfileItemProps> = ({ id, isActive, onPress }) => {
   return (
     <TouchableOpacity
-      key={id}
-      className={`p-2 rounded-lg items-center ${isActive ? 'bg-green-50' : ''}`}
       onPress={() => onPress(id)}
+      style={{
+        flex: 1,
+        alignItems: "center",
+        justifyContent: "center",
+        paddingVertical: 8,
+        paddingHorizontal: 4,
+        position: "relative",
+      }}
+      activeOpacity={0.7}
     >
-      <View className="items-center bg-red-200">
-        <View className={`w-8 h-8 rounded-full justify-center items-center ${
-          isActive ? 'bg-green-500' : 'bg-gray-300'
-        }`}>
-          <MaterialIcons
-            name="person"
-            size={20}
-            color={isActive ? '#FFFFFF' : '#666666'}
-          />
+      {/* Indicateur actif */}
+      {isActive && (
+        <View
+          style={{
+            position: "absolute",
+            top: 0,
+            left: "20%",
+            right: "20%",
+            height: 3,
+            backgroundColor: "#1877F2",
+            borderRadius: 2,
+          }}
+        />
+      )}
+
+      <View
+        style={{
+          alignItems: "center",
+          justifyContent: "center",
+          paddingTop: 4,
+        }}
+      >
+        <View
+          style={{
+            width: 32,
+            height: 32,
+            borderRadius: 16,
+            backgroundColor: "#F0F2F5",
+            alignItems: "center",
+            justifyContent: "center",
+            marginBottom: 2,
+            borderWidth: isActive ? 2 : 0,
+            borderColor: "#1877F2",
+          }}
+        >
+          <MaterialIcons name="person" size={20} color={isActive ? "#1877F2" : "#65676B"} />
         </View>
-        {/* <Text className={`text-xs mt-1 max-w-15 ${
-          isActive ? 'text-green-500' : 'text-gray-600'
-        }`} numberOfLines={1}> */}
-        {/* </Text> */}
       </View>
     </TouchableOpacity>
-  );
-};
+  )
+}
 
-export default NavProfileItem;
-
+export default NavProfileItem

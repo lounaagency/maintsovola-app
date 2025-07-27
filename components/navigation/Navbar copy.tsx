@@ -319,7 +319,7 @@ const NotificationPopup = () => (
                     <View key={notification.id} className="flex-row p-4 border-b border-gray-100">
                       <View className="mr-3 pt-1">
                         <View className={`w-2 h-2 rounded-full ${
-                          notification.isNew ? 'bg-blue-500' : 'bg-gray-300'
+                          notification.isNew ? 'bg-green-500' : 'bg-gray-300'
                         }`} />
                       </View>
                       <View className="flex-1">
