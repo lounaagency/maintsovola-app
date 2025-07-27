@@ -1,9 +1,9 @@
 import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
 import { MaterialIcons, FontAwesome, Feather } from '@expo/vector-icons';
-import Investissement from '../Navigation/Investissement';
-import Projets from '../Navigation/Projets';
-import Paiement from '../Navigation/Paiement';
-import Activity from '../Navigation/Activity';
+import Investissement from '../Navigation/Investissement/Investissement';
+import Projets from '../Navigation/Projects/Projets';
+import Paiement from '../Navigation/Payment/Paiement';
+import Activity from '../Navigation/Activity/Activity';
 
 const Tab = createMaterialTopTabNavigator();
 

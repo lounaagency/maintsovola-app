@@ -1,42 +1,46 @@
 import { Stack } from 'expo-router';
-import { View } from 'react-native';
+import { View, ActivityIndicator, Text } from 'react-native';
 import ProfileHeader from '~/components/Dashboard/Profile/Header';
 import ProfileTabs from '~/components/Dashboard/Profile/Tabs';
+import { useProfile } from '~/hooks/userhooks';
+import { useProjectsCount } from '~/hooks/userhooks';
+import { useFollowersCount } from '~/hooks/userhooks';
+import { useFollowingCount } from '~/hooks/userhooks';
 
 export default function UserLayout() {
-  // const navigation = useNavigation();
-
-  // Données exemple - à remplacer par vos données réelles
-  const profileData = {
-    photo_profil: 'https://media.istockphoto.com/id/1337144146/vector/default-avatar-profile-icon-vector.jpg?s=612x612&w=0&k=20&c=BIbFwuv7FxTWvh5S3vB6bkT0Qv8Vn8N5Ffseq84ClGI=',
-    nom: 'Doe',
-    prenoms: 'John',
-    nom_role: 'investisseur',
-    bio: 'Passionné par les startups innovantes',
-    adresse: 'Paris, France',
-    telephone: '+33 6 12 34 56 78',
-    email: 'john.doe@example.com'
-  };
-
+  const userId = '28ff57b7-fb92-4593-b239-5c56b0f44560';
+  const { profile, loading } = useProfile(userId);
+  const { projectsCount } = useProjectsCount(userId);
+  const { followersCount } = useFollowersCount(userId);
+  const { followingCount } = useFollowingCount(userId);
+  console.log("dedhbjhvjk", projectsCount);
   const handleFollowToggle = async () => {
     console.log('Toggle follow state');
-    // Implémentez votre logique de suivi ici
   };
 
   return (
     <View className="flex-1 bg-white">
       <Stack.Screen options={{ headerShown: false }} />
-      
-      <ProfileHeader
-        profile={profileData}
-        isCurrentUser={true}
-        isFollowing={false}
-        followersCount={124}
-        followingCount={56}
-        projectsCount={8}
-        onFollowToggle={handleFollowToggle}
-      />
-      
+      {loading ? (
+        <View className="flex-1 justify-center items-center">
+          <ActivityIndicator size="large" color="#125b47" />
+          <Text>Chargement du profil...</Text>
+        </View>
+      ) : profile ? (
+        <ProfileHeader
+          profile={profile}
+          isCurrentUser={true}
+          isFollowing={false}
+          followersCount={followersCount}
+          followingCount={followingCount}
+          projectsCount={projectsCount}
+          onFollowToggle={handleFollowToggle}
+        />
+      ) : (
+        <View className="flex-1 justify-center items-center">
+          <Text>Profil introuvable.</Text>
+        </View>
+      )}
       <ProfileTabs />
     </View>
   );
