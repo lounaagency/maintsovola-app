@@ -1,6 +1,8 @@
 import { Stack } from 'expo-router';
-import { StyleSheet, View, Alert } from 'react-native';
-import FeedList from '~/components/FeedList';
+
+import { StyleSheet, View } from 'react-native';
+
+import { ScreenContent } from '@/components/ScreenContent';
 
 export default function Home() {
   const handleLike = (projectId: string) => {
