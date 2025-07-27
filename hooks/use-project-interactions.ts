@@ -39,8 +39,8 @@ interface CultureDetail {
 }
 
 interface UseProjectInteractionsProps {
-  projectId: string;
-  userId?: number;
+  projectId: number;
+  userId?: string;
 }
 
 export const useProjectInteractions = ({ projectId, userId }: UseProjectInteractionsProps) => {
@@ -60,7 +60,7 @@ export const useProjectInteractions = ({ projectId, userId }: UseProjectInteract
   const loadFinancialDetails = async () => {
     try {
       setFinancialDetailsLoading(true);
-      const details = await getProjectCultureDetails(projectId);
+      const details = await getProjectCultureDetails(String(projectId));
       setCultureDetails(details || []); // Type script n'est pas content de la structure mais ca marche comme ça
     } catch (error) {
       console.error('Error loading financial details:', error);
@@ -138,11 +138,11 @@ export const useProjectInteractions = ({ projectId, userId }: UseProjectInteract
       setLoading(true);
 
       if (!isLiked) {
-        await postLikeProject(parseInt(projectId), { id_utilisateur: userId });
+        await postLikeProject(projectId, { id_utilisateur: userId });
         setLikesCount((prev) => prev + 1);
         setIsLiked(true);
       } else {
-        await removeLikeProject(parseInt(projectId), userId);
+        await removeLikeProject(projectId, userId);
         setLikesCount((prev) => Math.max(0, prev - 1));
         setIsLiked(false);
       }

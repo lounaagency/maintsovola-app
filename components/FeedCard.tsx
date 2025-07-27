@@ -1,23 +1,49 @@
 import { useState } from 'react';
-import { StyleSheet, View, Text, Image, TouchableOpacity, Dimensions } from 'react-native';
+import {
+  StyleSheet,
+  View,
+  Text,
+  Image,
+  TouchableOpacity,
+  Dimensions,
+  Pressable,
+} from 'react-native';
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons';
 import { AgriculturalProject } from '~/hooks/use-project-data';
 import { useProjectInteractions } from '~/hooks/use-project-interactions';
 import CommentsSection from './CommentsSection';
 import FinancialDetailsModal from './FinancialDetailsModal';
+import { useAuth } from '~/contexts/AuthContext';
+import { useRouter } from 'expo-router';
 
 interface FeedCardProps {
   project?: AgriculturalProject;
-  userId?: number;
   onShare?: () => void;
   onInvest?: () => void;
+  onRegionFilter?: (region: string) => void;
+  onDistrictFilter?: (district: string) => void;
+  onCommuneFilter?: (commune: string) => void;
+  onCultureFilter?: (culture: string) => void;
+  onStatusFilter?: (status: string) => void;
 }
 
-const FeedCard: React.FC<FeedCardProps> = ({ project, userId, onShare, onInvest }) => {
+const FeedCard: React.FC<FeedCardProps> = ({
+  project,
+  onShare,
+  onInvest,
+  onRegionFilter,
+  onDistrictFilter,
+  onCommuneFilter,
+  onCultureFilter,
+  onStatusFilter,
+}) => {
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [showComments, setShowComments] = useState(false);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
+  const { user, profile } = useAuth();
+  const userId = user?.id || undefined; // Remplacer par l'ID de l'utilisateur connecté, à récupérer depuis le contexte d'authentification
 
+  const router = useRouter();
   // Utiliser le hook pour les interactions
   const {
     likesCount,
@@ -30,7 +56,7 @@ const FeedCard: React.FC<FeedCardProps> = ({ project, userId, onShare, onInvest 
     openFinancialModal,
     closeFinancialModal,
   } = useProjectInteractions({
-    projectId: project?.id?.toString() || '0',
+    projectId: project?.id || 0,
     userId,
   });
 
@@ -75,7 +101,11 @@ const FeedCard: React.FC<FeedCardProps> = ({ project, userId, onShare, onInvest 
       <View className="p-4">
         <View className="mb-3 flex-row items-center justify-between">
           <View className="flex-row items-center">
-            <View className="h-10 w-10 items-center justify-center rounded-full bg-gray-300">
+            <TouchableOpacity
+              onPress={() => {
+                router.push(`/profil/${project.farmer?.id}`);
+              }}
+              className="h-10 w-10 items-center justify-center rounded-full bg-gray-300">
               {project.farmer?.avatar ? (
                 <Image source={{ uri: project.farmer.avatar }} className="h-12 w-12 rounded-full" />
               ) : (
@@ -83,11 +113,16 @@ const FeedCard: React.FC<FeedCardProps> = ({ project, userId, onShare, onInvest 
                   {project.farmer?.name?.charAt(0) || 'A'}
                 </Text>
               )}
-            </View>
+            </TouchableOpacity>
             <View className="ml-3">
-              <Text className="text-md font-semibold text-gray-900">
-                {project.farmer?.name || 'Agriculteur'}
-              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  router.push(`/profil/${project.farmer?.id}`);
+                }}>
+                <Text className="text-md font-semibold text-gray-900">
+                  {project.farmer?.name || 'Agriculteur'}
+                </Text>
+              </TouchableOpacity>
               <Text className="text-xs text-gray-500">
                 {new Date(project.creationDate).toLocaleDateString('fr-FR', {
                   day: '2-digit',
@@ -223,13 +258,20 @@ const FeedCard: React.FC<FeedCardProps> = ({ project, userId, onShare, onInvest 
               <View className="mb-3 flex-row gap-3">
                 <View className="flex-1">
                   <Text className="text-xs text-gray-500">Culture</Text>
-                  <Text className="font-medium text-green-700">
-                    {project.cultivationType || 'N/A'}
-                  </Text>
+                  <TouchableOpacity
+                    onPress={() => {
+                      onCultureFilter?.(project.cultivationType || '');
+                    }}
+                    className="flex-row items-center gap-1">
+                    <Text className="font-medium text-green-700">
+                      {project.cultivationType || 'N/A'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
                 <View className="flex-1">
                   <Text className="text-xs text-gray-500">Terrain</Text>
-                  <TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => onCommuneFilter?.(project.location?.commune || '')}>
                     <Text className="font-medium text-gray-800 underline">
                       {terrainName} ({project.cultivationArea || 0} ha)
                     </Text>
@@ -239,15 +281,21 @@ const FeedCard: React.FC<FeedCardProps> = ({ project, userId, onShare, onInvest 
               <View className="flex-row gap-3">
                 <View className="flex-1">
                   <Text className="text-xs text-gray-500">Localisation</Text>
-                  <Text className="font-medium text-green-700">
-                    {project.location?.commune || 'N/A'}, {project.location?.district || 'N/A'}
-                  </Text>
+                  <TouchableOpacity
+                    onPress={() => onCommuneFilter?.(project.location?.commune || '')}>
+                    <Text className="font-medium text-green-700">
+                      {project.location?.commune || 'N/A'}, {project.location?.district || 'N/A'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
                 <View className="flex-1">
                   <Text className="text-xs text-gray-500">Région</Text>
-                  <Text className="font-medium text-green-700">
-                    {project.location?.region || 'N/A'}
-                  </Text>
+                  <TouchableOpacity
+                    onPress={() => onRegionFilter?.(project.location?.region || '')}>
+                    <Text className="font-medium text-green-700">
+                      {project.location?.region || 'N/A'}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
               </View>
             </View>
@@ -329,11 +377,7 @@ const FeedCard: React.FC<FeedCardProps> = ({ project, userId, onShare, onInvest 
         </View>
 
         {/* Comments Section */}
-        <CommentsSection
-          projectId={project.id?.toString() || '0'}
-          userId={userId}
-          isVisible={showComments}
-        />
+        <CommentsSection projectId={project.id || 0} userId={userId} isVisible={showComments} />
 
         {/* Financial Details Modal */}
         <FinancialDetailsModal

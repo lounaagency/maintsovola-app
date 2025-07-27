@@ -9,10 +9,10 @@ import FilterInterface from '~/components/FilterInterface';
 export default function FeedScreen() {
   const tabs = ['Pour vous', 'Abonnements'];
   const [activeTab, setActiveTab] = useState('Pour vous');
-  
+
   // État pour gérer les filtres
   const [activeFilters, setActiveFilters] = useState<Record<string, string>>({});
-  
+
   // Utilisation du hook avec les filtres
   const { projects, loading, error } = useProjectData({
     followedUsersOnly: activeTab === 'Abonnements',
@@ -20,15 +20,12 @@ export default function FeedScreen() {
     ...activeFilters, // Spread des filtres actifs
   });
 
-  // TODO: Récupérer l'ID de l'utilisateur connecté depuis le contexte d'authentification
-  const userId = 1; // Temporaire pour les tests
-
   // Fonction pour ajouter un filtre
   const addFilter = (key: string, value: string) => {
-    setActiveFilters(prev => {
+    setActiveFilters((prev) => {
       const newFilters = {
         ...prev,
-        [key]: value
+        [key]: value,
       };
       console.log('Filtres mis à jour:', newFilters);
       return newFilters;
@@ -37,7 +34,7 @@ export default function FeedScreen() {
 
   // Fonction pour supprimer un filtre spécifique
   const removeFilter = (key: string) => {
-    setActiveFilters(prev => {
+    setActiveFilters((prev) => {
       const newFilters = { ...prev };
       delete newFilters[key];
       return newFilters;
@@ -92,29 +89,33 @@ export default function FeedScreen() {
     <View style={styles.container}>
       <Text style={styles.title}>Projets en financement</Text>
       <SubNavTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
-      
+
       {/* Conteneur des filtres actifs */}
       <FilterContainer
         filters={activeFilters}
         onRemove={removeFilter}
         onClearAll={clearAllFilters}
       />
-      
+
       {/* Interface pour ajouter des filtres */}
-      <FilterInterface
+      {/* <FilterInterface
         onRegionFilter={handleRegionFilter}
         onDistrictFilter={handleDistrictFilter}
         onCommuneFilter={handleCommuneFilter}
         onCultureFilter={handleCultureFilter}
         onStatusFilter={handleStatusFilter}
-      />
-      
+      /> */}
+
       <FeedList
         projects={projects}
         loading={loading}
-        userId={userId}
         onShare={handleShare}
         onInvest={handleInvest}
+        onRegionFilter={handleRegionFilter}
+        onDistrictFilter={handleDistrictFilter}
+        onCommuneFilter={handleCommuneFilter}
+        onCultureFilter={handleCultureFilter}
+        onStatusFilter={handleStatusFilter}
       />
     </View>
   );

@@ -12,8 +12,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useProjectInteractions } from '~/hooks/use-project-interactions';
 
 interface CommentsSectionProps {
-  projectId: string;
-  userId?: number;
+  projectId: number;
+  userId?: string;
   isVisible: boolean;
 }
 

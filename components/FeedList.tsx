@@ -15,6 +15,11 @@ interface FeedListProps {
   // Props pour la récupération automatique des données (si projects n'est pas fourni)
   followedUsersOnly?: boolean;
   status?: string;
+  onRegionFilter?: (region: string) => void;
+  onDistrictFilter?: (district: string) => void;
+  onCommuneFilter?: (commune: string) => void;
+  onCultureFilter?: (culture: string) => void;
+  onStatusFilter?: (status: string) => void;
 }
 
 const FeedList: React.FC<FeedListProps> = ({
@@ -26,6 +31,11 @@ const FeedList: React.FC<FeedListProps> = ({
   onInvest,
   followedUsersOnly,
   status,
+  onRegionFilter,
+  onDistrictFilter,
+  onCommuneFilter,
+  onCultureFilter,
+  onStatusFilter,
 }) => {
   const [internalProjects, setInternalProjects] = useState<AgriculturalProject[]>([]);
   const [internalLoading, setInternalLoading] = useState(true);
@@ -73,9 +83,17 @@ const FeedList: React.FC<FeedListProps> = ({
     return (
       <FeedCard
         project={item}
-        userId={userId}
         onShare={() => onShare?.(item.id)}
         onInvest={() => onInvest?.(item.id)}
+        onRegionFilter={() => onRegionFilter?.(item.location.region)}
+        onDistrictFilter={() => onDistrictFilter?.(item.location.district)}
+        onCommuneFilter={() => {
+          onCommuneFilter?.(item.location.commune);
+        }}
+        onCultureFilter={() => {
+          onCultureFilter?.(item.cultivationType);
+        }}
+        onStatusFilter={() => onStatusFilter?.(item.status)}
       />
     );
   };

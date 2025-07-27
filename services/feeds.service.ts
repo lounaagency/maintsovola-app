@@ -235,7 +235,7 @@ export const getProjetctFromFollowing = async (userId: string) => {
           const projectPhotos = photosData?.find((p) => p.id_projet === project.id_projet);
           return {
             ...project,
-            photos: projectPhotos?.photos || null,
+            photos: projectPhotos?.photos ? projectPhotos.photos.split(',') : [],
             created_at: projectPhotos?.created_at || project.created_at,
             id_terrain: projectPhotos?.id_terrain || null,
             terrain: projectPhotos?.terrain || null,
@@ -259,7 +259,7 @@ export const getProjetctFromFollowing = async (userId: string) => {
   }
 };
 
-export const getCommentsByProjectId = async (projectId: string, userId?: number) => {
+export const getCommentsByProjectId = async (projectId: number, userId?: string) => {
   // Première requête : récupérer les commentaires sans les informations utilisateur
   const { data: commentsData, error: commentsError } = await supabase
     .from('commentaire')
@@ -272,7 +272,7 @@ export const getCommentsByProjectId = async (projectId: string, userId?: number)
           id_parent_commentaire
         `
     )
-    .eq('id_projet', parseInt(projectId))
+    .eq('id_projet', projectId)
     .order('date_creation', { ascending: true });
 
   if (commentsError) {
@@ -377,7 +377,7 @@ export const getProjectLikesCount = async (projectId: string) => {
   return data?.length || 0;
 };
 
-export const getProjectLikesWithUserStatus = async (projectId: string, userId?: number) => {
+export const getProjectLikesWithUserStatus = async (projectId: number, userId?: string) => {
   const { data, error } = await supabase
     .from('aimer_projet')
     .select('id_projet, id_utilisateur')
@@ -501,8 +501,8 @@ export const postLikeProject = async (projectId: number, data: any) => {
 };
 
 export const postComment = async (commentData: {
-  projectId: string;
-  userId: number;
+  projectId: number;
+  userId: string;
   text: string;
   parentCommentId?: number | null;
 }) => {
@@ -525,7 +525,7 @@ export const postComment = async (commentData: {
   return data;
 };
 
-export const postLikeComment = async (commentId: number, userId: number) => {
+export const postLikeComment = async (commentId: number, userId: string) => {
   const { data, error } = await supabase
     .from('aimer_commentaire')
     .insert([{ id_commentaire: commentId, id_utilisateur: userId }])
@@ -538,7 +538,7 @@ export const postLikeComment = async (commentId: number, userId: number) => {
   return data;
 };
 
-export const removeLikeProject = async (projectId: number, userId: number) => {
+export const removeLikeProject = async (projectId: number, userId: string) => {
   const { data, error } = await supabase
     .from('aimer_projet')
     .delete()
@@ -552,7 +552,7 @@ export const removeLikeProject = async (projectId: number, userId: number) => {
   return data;
 };
 
-export const removeLikeComment = async (commentId: number, userId: number) => {
+export const removeLikeComment = async (commentId: number, userId: string) => {
   const { data, error } = await supabase
     .from('aimer_commentaire')
     .delete()
