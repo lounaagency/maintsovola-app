@@ -3,8 +3,13 @@ import { View, Text, StyleSheet } from 'react-native';
 
 export default function ProjetScreen() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Projet</Text>
+    <View 
+    // style={styles.container}
+    className='flex-1 justify-center items-center p-5 bg-gray-50'
+    >
+      <Text // style={styles.title} --- IGNORE ---        
+        className="text-2xl font-bold mb-2">
+        Projet</Text>
     </View>
   );
 }

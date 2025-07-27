@@ -4,7 +4,7 @@ import { View, Text, StyleSheet } from 'react-native';
 export default function ProfilScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Notif</Text>
+      <Text style={styles.title}>Profil</Text>
     </View>
   );
 }

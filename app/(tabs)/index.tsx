@@ -1,23 +1,21 @@
-import { Stack } from 'expo-router';
+// app/index.tsx
+import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
+import { useAuth } from '~/contexts/AuthContext';
 
-import { StyleSheet, View } from 'react-native';
+import '../../global.css'
 
-import { ScreenContent } from '~/components/ScreenContent';
+export default function Index() {
+  const router = useRouter();
+  const { user } = useAuth();
 
-export default function Home() {
-  return (
-    <>
-      {/* <Stack.Screen options={{ title: 'Tab One' }} />
-      <View style={styles.container}>
-        <ScreenContent path="app/(tabs)/index.tsx" title="Tab One" />
-      </View> */}
-    </>
-  );
+  useEffect(() => {
+    if (user) {
+      router.replace('/feed'); // ou '/(tabs)/feed'
+    } else {
+      router.replace('/(auth)/login');
+    }
+  }, [user]);
+
+  return null;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 24,
-  },
-});
