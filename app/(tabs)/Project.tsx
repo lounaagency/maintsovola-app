@@ -1,29 +1,36 @@
 // Project.tsx
-import React, { useState, useMemo } from 'react';
+import { Plus, SearchIcon } from 'lucide-react-native';
+import { useMemo, useState } from 'react';
 import {
-  View,
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Modal,
+  ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
-  FlatList,
-  ActivityIndicator,
-  ScrollView,
-  StyleSheet,
+  View,
 } from 'react-native';
-import { SearchIcon, Plus, SquareArrowOutUpRight } from 'lucide-react-native';
-import type { ProjectData } from '~/type/projectInterface';
 import { useProjects } from '~/hooks/useProject';
+import type { ProjectData } from '~/type/projectInterface';
 
 /* ---------- Carte projet ---------- */
 type ListTerrainProps = { item: ProjectData; selected: string };
 const ListTerrain = ({ item, selected }: ListTerrainProps) => {
   const visible = useMemo(() => {
     switch (selected) {
-      case 'en_attente': return item.statut === 'en attente';
-      case 'finance':    return item.statut === 'en financement';
-      case 'en_prod':    return item.statut === 'en cours';
-      case 'termine':    return item.statut === 'terminé';
-      default:           return true;
+      case 'en_attente':
+        return item.statut === 'en attente';
+      case 'finance':
+        return item.statut === 'en financement';
+      case 'en_prod':
+        return item.statut === 'en cours';
+      case 'termine':
+        return item.statut === 'terminé';
+      default:
+        return true;
     }
   }, [item.statut, selected]);
 
@@ -31,9 +38,11 @@ const ListTerrain = ({ item, selected }: ListTerrainProps) => {
 
   return (
     <TouchableOpacity
-      className="border border-gray-300 rounded-lg min-h-24 p-3 my-2"
+      className="my-2 min-h-24 rounded-lg border border-gray-300 p-3"
       activeOpacity={0.5}
-    >
+      onPress={() => {
+        <ModalDetails item={item} isVivible={true}/>
+      }}>
       <View className="flex-row justify-between">
         <View>
           <Text className="text-xl font-bold">{item.titre}</Text>
@@ -43,14 +52,32 @@ const ListTerrain = ({ item, selected }: ListTerrainProps) => {
         </View>
 
         <View className="justify-end">
-          <Text className="border border-gray-200 px-2 rounded-full text-sm">
-            {item.statut}
-          </Text>
+          <Text className="rounded-full border border-gray-200 px-2 text-sm">{item.statut}</Text>
         </View>
       </View>
     </TouchableOpacity>
   );
 };
+
+const ModalDetails = (item: ProjectData, isVisible: boolean) => {
+  return (
+    <Modal
+      visible={isVisible}
+    >
+      <Text className='text-3xl font-bold'>Details sur le projet {item.titre}</Text>
+      <View>
+        <View>
+          <Text>Agriculteur</Text>
+          <View className='w-full flex flex-row justify-between'>
+            <Text>{item.tantsaha?.nom + " " + item.tantsaha?.prenoms}</Text>
+            {item.tantsaha?.photo_profil && <Image source={{ uri: item.tantsaha?.photo_profil }} width={40} height={40} className='overflow -hidden rounded-full'/>}
+          </View>
+
+        </View>
+      </View>
+    </Modal>
+  )
+}
 
 /* ---------- Barre de filtres ---------- */
 type StatusSelectProps = {
@@ -76,16 +103,12 @@ const StatusSelect = ({ selected, setSelected }: StatusSelectProps) => {
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scroll}>
       {filters.map(({ key, label }) => (
         <TouchableOpacity key={key} onPress={() => setSelected(key)} className="mx-2">
-          <Text style={[styles.text, selected === key && styles.selected]}>
-            {label}
-          </Text>
+          <Text style={[styles.text, selected === key && styles.selected]}>{label}</Text>
         </TouchableOpacity>
       ))}
     </ScrollView>
   );
 };
-
-
 
 /* ---------- Écran principal ---------- */
 export default function Project() {
@@ -96,19 +119,16 @@ export default function Project() {
   return (
     <ScrollView className="px-5">
       <View className="mt-4">
-        <Text className="font-extrabold text-4xl">Projects</Text>
-        <Text className="text-gray-500 text-xl">
-          Gérez vos projets agricole ici
-        </Text>
+        <Text className="text-4xl font-extrabold">Projects</Text>
+        <Text className="text-xl text-gray-500">Gérez vos projets agricole ici</Text>
       </View>
 
       {/* Barre de recherche */}
       <View className="my-5">
         <View
-          className={`flex-row items-center border rounded-lg mt-4 p-2 ${
-            isSearchFocus ? 'border-green-700 border-2' : 'border-gray-300'
-          }`}
-        >
+          className={`mt-4 flex-row items-center rounded-lg border p-2 ${
+            isSearchFocus ? 'border-2 border-green-700' : 'border-gray-300'
+          }`}>
           <SearchIcon size={20} color="#888" />
           <TextInput
             placeholder="Rechercher..."
@@ -118,9 +138,9 @@ export default function Project() {
           />
         </View>
 
-        <TouchableOpacity className="bg-green-600 rounded-lg py-3 flex flex-row justify-center items-center mt-3">
+        <TouchableOpacity className="mt-3 flex flex-row items-center justify-center rounded-lg bg-green-600 py-3">
           <Plus color="#ffffff" />
-          <Text className="text-white font-semibold ml-1">Nouveau projet</Text>
+          <Text className="ml-1 font-semibold text-white">Nouveau projet</Text>
         </TouchableOpacity>
       </View>
 
@@ -135,7 +155,7 @@ export default function Project() {
         keyExtractor={(p) => String(p.id_projet)}
         renderItem={({ item }) => <ListTerrain item={item} selected={selected} />}
         scrollEnabled={false}
-        className="border border-gray-300 rounded-xl p-3 my-5"
+        className="my-5 rounded-xl border border-gray-300 p-3"
       />
     </ScrollView>
   );

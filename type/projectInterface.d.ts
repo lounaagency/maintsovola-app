@@ -12,6 +12,7 @@ export interface ProjectData {
   tantsaha?: {
     nom: string;
     prenoms?: string;
+    photo_profil?:string;
   } | null;
   terrain?: {
     nom_terrain?: string;
@@ -25,21 +26,21 @@ export interface ProjectData {
   commune?: {
     nom_commune?: string;
   };
-  projet_culture?: Array<{
+  projet_culture?: {
     id_projet_culture: number;
     id_culture: number;
     culture?: {
       nom_culture?: string;
     };
     cout_exploitation_previsionnel?: number;
-  }>;
+  }[];
   photos?: string;
   id_region?: number;
   id_district?: number;
   id_commune?: number;
   fundingGoal?: number;
   currentFunding?: number;
-  investissements?: Array<{
+  investissements?: {
     montant: number;
-  }>;
+  }[];
 }
