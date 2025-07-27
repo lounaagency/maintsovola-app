@@ -7,8 +7,7 @@ export function useProjects() {
   const [data, setData] = useState<ProjectData[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    (async () => {
+  const fetchData = async () => {
       const { data, error } = await supabase
         .from('projet')
         .select(`
@@ -28,11 +27,12 @@ export function useProjects() {
         `);
 
       if (!error) setData(data ?? []);
-      setLoading(false);
-    })();
-  }, []);
 
-  return { projects: data, loading };
+      setLoading(false);
+  }
+  useEffect(() => { fetchData(); }, []);
+
+  return { projects: data, loading, refetch: fetchData };
 }
 
 export function useDetails(projectId: number) {
@@ -45,9 +45,9 @@ export function useDetails(projectId: number) {
         .from('projet')
         .select(`
           *,
-          tantsaha:id_tantsaha(nom, prenoms,photo_profil),
-          technicien:id_technicien(nom, prenoms,photo_profil),
-          superviseur:id_superviseur(nom, prenoms,photo_profil),
+          tantsaha:id_tantsaha(nom, prenoms, photo_profil),
+          technicien:id_technicien(nom, prenoms, photo_profil),
+          superviseur:id_superviseur(nom, prenoms, photo_profil),
           terrain:id_terrain(*),
           region:id_region(nom_region),
           district:id_district(nom_district),

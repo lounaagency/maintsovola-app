@@ -60,6 +60,16 @@ export interface ProjectDataDetails {
     prenoms?: string;
     photo_profil?: string;
   } | null;
+  technicien?: {
+    nom: string;
+    prenoms?: string;
+    photo_profil?: string;
+  } | null;
+  superviseur?: {
+    nom: string;
+    prenoms?: string;
+    photo_profil?: string;
+  } | null;
   terrain?: {
     nom_terrain?: string;
   };
