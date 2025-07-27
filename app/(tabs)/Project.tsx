@@ -1,4 +1,5 @@
 // Project.tsx
+import { error } from 'console';
 import { Plus, SearchIcon } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import {
@@ -13,12 +14,23 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useProjects } from '~/hooks/useProject';
-import type { ProjectData } from '~/type/projectInterface';
+import { useDetails, useProjects } from '@/hooks/useProject';
+import type { ProjectData } from '@/type/projectInterface';
+
+const colorCode = {
+    "en attente": "#cbe043",
+    "en financement": "#94e043",
+    "en cours": "#5de043",
+    "terminé": "#2ce026",
+  }
+
 
 /* ---------- Carte projet ---------- */
 type ListTerrainProps = { item: ProjectData; selected: string };
+
 const ListTerrain = ({ item, selected }: ListTerrainProps) => {
+  const [modalVisible, setModalVisible] = useState(false);
+
   const visible = useMemo(() => {
     switch (selected) {
       case 'en_attente':
@@ -37,46 +49,73 @@ const ListTerrain = ({ item, selected }: ListTerrainProps) => {
   if (!visible) return null;
 
   return (
-    <TouchableOpacity
-      className="my-2 min-h-24 rounded-lg border border-gray-300 p-3"
-      activeOpacity={0.5}
-      onPress={() => {
-        <ModalDetails item={item} isVivible={true}/>
-      }}>
-      <View className="flex-row justify-between">
-        <View>
-          <Text className="text-xl font-bold">{item.titre}</Text>
-          <Text className="text-gray-500">
-            {item.tantsaha?.nom} {item.tantsaha?.prenoms}
-          </Text>
+    <>
+      <TouchableOpacity
+        className="my-2 min-h-24 rounded-lg border border-gray-300 p-3"
+        activeOpacity={0.5}
+        onPress={() => setModalVisible(true)}
+      >
+        <View className="flex-row justify-between">
+          <View>
+            <Text className="text-xl font-bold">{item.titre}</Text>
+            <Text className="text-gray-500">
+              {item.tantsaha?.nom} {item.tantsaha?.prenoms}
+            </Text>
+          </View>
+          <View className="justify-end">
+            <Text className={`rounded-full border border-gray-200 px-2 text-sm`} style={{ backgroundColor: colorCode[item.statut as keyof typeof colorCode] }} >{item.statut}</Text>
+          </View>
         </View>
+      </TouchableOpacity>
 
-        <View className="justify-end">
-          <Text className="rounded-full border border-gray-200 px-2 text-sm">{item.statut}</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+      <ModalDetails
+        projectId={item.id_projet}
+        isVisible={modalVisible}
+        onClose={() => setModalVisible(false)}
+      /> bg-[${colorCode[item.statut  as keyof typeof colorCode]}]
+    </>
   );
 };
 
-const ModalDetails = (item: ProjectData, isVisible: boolean) => {
+type ModalDetailsProps = {
+  projectId: number;
+  isVisible: boolean;
+  onClose: () => void;
+};
+
+const ModalDetails = ({ projectId, isVisible, onClose }: ModalDetailsProps) => {
+  const {projects, loading} = useDetails(projectId);
   return (
-    <Modal
-      visible={isVisible}
-    >
-      <Text className='text-3xl font-bold'>Details sur le projet {item.titre}</Text>
-      <View>
-        <View>
-          <Text>Agriculteur</Text>
-          <View className='w-full flex flex-row justify-between'>
-            <Text>{item.tantsaha?.nom + " " + item.tantsaha?.prenoms}</Text>
-            {item.tantsaha?.photo_profil && <Image source={{ uri: item.tantsaha?.photo_profil }} width={40} height={40} className='overflow -hidden rounded-full'/>}
+    <Modal visible={isVisible} transparent animationType="slide">
+      {loading && <ActivityIndicator size={30} color="#009800" className="mt-5" />}
+      <View className="flex-1 justify-center bg-black/50 px-4">
+        <View className="rounded-xl bg-white p-6">
+          <Text className="text-2xl font-bold">Détails sur le projet:  {projects?.titre}</Text>
+          <View className="mt-4">
+            <Text className="font-semibold text-xl">Agriculteur</Text>
+            <View className="mt-2 flex-row items-center justify-between">
+              <Text>{projects?.tantsaha?.nom} {projects?.tantsaha?.prenoms}</Text>
+              {projects?.tantsaha?.photo_profil && (
+                <Image
+                  source={{ uri: projects.tantsaha.photo_profil }}
+                  style={{ width: 40, height: 40 }}
+                  className="rounded-full"
+                />
+              )}
+            </View>
           </View>
 
+          <TouchableOpacity onPress={onClose} className="mt-6 items-center">
+            <Text className="text-red-500 font-semibold">Fermer</Text>
+          </TouchableOpacity>
         </View>
       </View>
     </Modal>
-  )
+  );
+};
+
+const ModalAdd = () => {
+
 }
 
 /* ---------- Barre de filtres ---------- */
@@ -94,7 +133,7 @@ const StatusSelect = ({ selected, setSelected }: StatusSelectProps) => {
   const filters = [
     { key: 'all', label: 'Tous' },
     { key: 'en_attente', label: 'En attente' },
-    { key: 'finance', label: 'Financement 100%' },
+    { key: 'finance', label: 'En financement' },
     { key: 'en_prod', label: 'En production' },
     { key: 'termine', label: 'Terminés' },
   ];
