@@ -1,33 +1,21 @@
-import { Link, Tabs } from 'expo-router';
+import { Slot } from 'expo-router';
+import { View, KeyboardAvoidingView, Platform } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { HeaderButton } from '../../components/HeaderButton';
-import { TabBarIcon } from '../../components/TabBarIcon';
+import Navbar from '../../components/navigation/Navbar';
+import Header from '../../components/navigation/Header';
+import React, { useState } from 'react';
 
-export default function TabLayout() {
+export default function TabsLayout() {
+  const [activeNavIcon, setActiveNavIcon] = useState('home');
+
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: 'black',
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <HeaderButton />
-            </Link>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="two"
-        options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-        }}
-      />
-    </Tabs>
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} edges={['top', 'bottom']}>
+        <View style={{ flex: 1 }}>
+        <Header />
+        <Navbar activeNavIcon={activeNavIcon} onNavChange={setActiveNavIcon} />
+          <Slot />
+        </View>
+    </SafeAreaView>
   );
 }
