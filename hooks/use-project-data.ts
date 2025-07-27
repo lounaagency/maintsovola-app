@@ -6,6 +6,7 @@ import {
   getProjetctFromFollowing,
   postLikeProject,
 } from '~/services/feeds.service';
+import { useAuth } from '~/contexts/AuthContext';
 
 // Types pour les projets (à définir selon vos besoins)
 export interface AgriculturalProject {
@@ -65,18 +66,18 @@ export const useProjectData = (filters: ProjectFilter = {}) => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Pour le moment, on simule un utilisateur connecté
-  // Vous pouvez remplacer cela par votre système d'authentification
-  const user = { id: '28ff57b7-fb92-4593-b239-5c56b0f44560' };
+  // Utilisation du contexte d'authentification
+  const { user, profile } = useAuth();
 
   const toggleLike = async (projectId: number, isCurrentlyLiked: boolean) => {
-    if (!user) {
+    if (!user || !profile) {
       console.log('Vous devez être connecté pour aimer un projet');
+      // Optionnel: vous pouvez rediriger vers la page de connexion
+      // router.push('/(auth)/login');
       return;
     }
 
     try {
-      const action = isCurrentlyLiked ? 'dislike' : 'like';
       const data = {
         id_utilisateur: user.id,
         id_projet: projectId,
@@ -106,15 +107,19 @@ export const useProjectData = (filters: ProjectFilter = {}) => {
   const fetchProjects = async () => {
     try {
       setLoading(true);
-      let rawProjects;
+      let rawProjects: any[] = [];
 
       // Utiliser les fonctions du service selon les filtres
       if (filters.projectId) {
         // Récupérer un projet spécifique
         rawProjects = [await getProjectById(String(filters.projectId))];
       } else if (filters.followedUsersOnly && user) {
-        // Récupérer les projets des utilisateurs suivis
+        // Récupérer les projets des utilisateurs suivis (nécessite une authentification)
         rawProjects = await getProjetctFromFollowing(user.id);
+      } else if (filters.followedUsersOnly && !user) {
+        // Si on demande les abonnements mais que l'utilisateur n'est pas connecté
+        console.log('Utilisateur non connecté, impossible de récupérer les abonnements');
+        rawProjects = [];
       } else if (Object.keys(filters).length > 0) {
         // Utiliser les filtres avancés
         const filterObject = {
@@ -217,5 +222,9 @@ export const useProjectData = (filters: ProjectFilter = {}) => {
     error,
     toggleLike,
     refetch: fetchProjects,
+    // Informations d'authentification utiles
+    isAuthenticated: !!user,
+    currentUser: user,
+    userProfile: profile,
   };
 };
