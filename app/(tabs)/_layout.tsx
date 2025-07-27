@@ -1,33 +1,20 @@
-import { Link, Tabs } from 'expo-router';
+// app/(tabs)/_layout.tsx
+import { Slot } from 'expo-router';
+import { SafeAreaView, View } from 'react-native';
+import Navbar from '~/components/navigation/Navbar';
+import React, { useState } from 'react';
+import Header from '~/components/navigation/Header';
 
-import { HeaderButton } from '../../components/HeaderButton';
-import { TabBarIcon } from '../../components/TabBarIcon';
+export default function TabsLayout() {
+  const [activeNavIcon, setActiveNavIcon] = useState('home');
 
-export default function TabLayout() {
   return (
-    <Tabs
-      screenOptions={{
-        tabBarActiveTintColor: 'black',
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Tab One',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-          headerRight: () => (
-            <Link href="/modal" asChild>
-              <HeaderButton />
-            </Link>
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="two"
-        options={{
-          title: 'Tab Two',
-          tabBarIcon: ({ color }) => <TabBarIcon name="code" color={color} />,
-        }}
-      />
-    </Tabs>
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
+      <Header />
+      <Navbar activeNavIcon={activeNavIcon} onNavChange={setActiveNavIcon} />
+      <View style={{ flex: 1 }}>
+        <Slot />
+      </View>
+    </SafeAreaView>
   );
 }
