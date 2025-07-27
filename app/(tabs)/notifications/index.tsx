@@ -1,10 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-
+import NotificationsScreen from '~/components/Notif/Notif';
 export default function NotifScreen() {
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Notif</Text>
+      <NotificationsScreen />
+      {/* <Text style={styles.title}>Notif</Text> */}
     </View>
   );
 }

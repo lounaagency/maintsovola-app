@@ -174,7 +174,7 @@ const Navbar: React.FC<NavbarProps> = ({ activeNavIcon = "home", onNavChange }) 
                     className={`${isActive ? "text-green-600" : "text-gray-500"}`}
                   />
               )} 
-                {item.id === 'notifications' && renderBadge(notificationCount)}
+                {/* {item.id === 'notifications' && renderBadge(notificationCount)} */}
                 {item.id === 'messages' && renderBadge(messageCount)}  
             </View>
           </TouchableOpacity>
@@ -308,20 +308,20 @@ const Navbar: React.FC<NavbarProps> = ({ activeNavIcon = "home", onNavChange }) 
                 <View className="w-8 h-8 rounded-full bg-gray-100 items-center justify-center mr-3 relative">
                   <MaterialIcons name="notifications" size={18} color="#374151" />
                   {notificationCount > 0 && (
-                    <View className="absolute -top-1 -right-1 bg-red-500 rounded-full min-w-4 h-4 justify-center items-center">
-                      <Text className="text-white font-bold" style={{ fontSize: 9 }}>
+                    <View >
+                      {/* <Text className="text-white font-bold" style={{ fontSize: 9 }}>
                         {notificationCount > 9 ? "9+" : notificationCount.toString()}
-                      </Text>
+                      </Text> className="absolute -top-1 -right-1 bg-red-500 rounded-full min-w-4 h-4 justify-center items-center"*/}
                     </View>
                   )}
                 </View>
                 <View className="flex-1 flex-row items-center justify-between">
                   <Text className="text-gray-800 text-base">Notifications</Text>
                   {notificationCount > 0 && (
-                    <View className="bg-red-500 rounded-full px-2 py-1">
-                      <Text className="text-white font-bold text-xs">
+                    <View >
+                      {/* <Text className="text-white font-bold text-xs">
                         {notificationCount > 9 ? "9+" : notificationCount.toString()}
-                      </Text>
+                      </Text> className="bg-red-500 rounded-full px-2 py-1"*/}
                     </View>
                   )}
                 </View>
