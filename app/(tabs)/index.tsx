@@ -1,34 +1,21 @@
-import { Stack } from 'expo-router';
-import { StyleSheet, View, Alert } from 'react-native';
-import FeedList from '~/components/FeedList';
+// app/index.tsx
+import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
+import { useAuth } from '~/contexts/AuthContext';
 
-export default function Home() {
-  const handleLike = (projectId: string) => {
-    console.log('Liked project:', projectId);
-  };
+import '../../global.css'
 
-  const handleComment = (projectId: string) => {
-    console.log('Comment on project:', projectId);
-  };
+export default function Index() {
+  const router = useRouter();
+  const { user } = useAuth();
 
-  const handleShare = (projectId: string) => {
-    Alert.alert('Partage', `Partager le projet ${projectId}`);
-  };
+  useEffect(() => {
+    if (user) {
+      router.replace('/feed'); // ou '/(tabs)/feed'
+    } else {
+      router.replace('/(auth)/login');
+    }
+  }, [user]);
 
-  const handleInvest = (projectId: string) => {
-    Alert.alert('Investissement', `Investir dans le projet ${projectId}`);
-  };
-
-  return (
-    <>
-      <Stack.Screen options={{ title: 'Projets Agricoles' }} />
-      <View style={styles.container}></View>
-    </>
-  );
+  return null;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});

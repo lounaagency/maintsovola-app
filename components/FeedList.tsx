@@ -117,7 +117,6 @@ const FeedList: React.FC<FeedListProps> = ({
         data={projects}
         renderItem={renderProject}
         keyExtractor={(item) => String(item.id)}
-        contentContainerStyle={styles.listContainer}
         showsVerticalScrollIndicator={false}
         refreshControl={
           <RefreshControl
@@ -138,9 +137,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f8fafc',
-  },
-  listContainer: {
-    padding: 16,
   },
   separator: {
     height: 8,
