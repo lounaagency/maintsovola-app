@@ -7,6 +7,7 @@ import {
   postLikeComment,
   removeLikeProject,
   removeLikeComment,
+  getProjectCultureDetails,
 } from '~/services/feeds.service';
 
 interface Comment {
@@ -18,6 +19,23 @@ interface Comment {
   utilisateur: any;
   likes?: number;
   isLiked?: boolean;
+}
+
+interface CultureDetail {
+  id_projet_culture: any;
+  id_projet: any;
+  id_culture: any;
+  cout_exploitation_previsionnel: any;
+  rendement_previsionnel: any;
+  cout_exploitation_reel?: any;
+  rendement_reel?: any;
+  date_debut_previsionnelle?: any;
+  date_debut_reelle?: any;
+  rendement_financier_previsionnel: any;
+  culture: {
+    nom_culture: string;
+    prix_tonne: number;
+  };
 }
 
 interface UseProjectInteractionsProps {
@@ -32,6 +50,37 @@ export const useProjectInteractions = ({ projectId, userId }: UseProjectInteract
   const [loading, setLoading] = useState(false);
   const [commentsLoading, setCommentsLoading] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
+
+  // États pour les détails financiers
+  const [cultureDetails, setCultureDetails] = useState<CultureDetail[]>([]);
+  const [showFinancialModal, setShowFinancialModal] = useState(false);
+  const [financialDetailsLoading, setFinancialDetailsLoading] = useState(false);
+
+  // Charger les détails financiers par culture
+  const loadFinancialDetails = async () => {
+    try {
+      setFinancialDetailsLoading(true);
+      const details = await getProjectCultureDetails(projectId);
+      setCultureDetails(details || []); // Type script n'est pas content de la structure mais ca marche comme ça
+    } catch (error) {
+      console.error('Error loading financial details:', error);
+    } finally {
+      setFinancialDetailsLoading(false);
+    }
+  };
+
+  // Ouvrir le modal des détails financiers
+  const openFinancialModal = async () => {
+    setShowFinancialModal(true);
+    if (cultureDetails.length === 0) {
+      await loadFinancialDetails();
+    }
+  };
+
+  // Fermer le modal des détails financiers
+  const closeFinancialModal = () => {
+    setShowFinancialModal(false);
+  };
 
   // Charger toutes les données en une fois
   const loadData = async () => {
@@ -161,5 +210,11 @@ export const useProjectInteractions = ({ projectId, userId }: UseProjectInteract
     toggleCommentLike,
     refreshComments: refreshData,
     refreshLikes: refreshData,
+    // Fonctions pour les détails financiers
+    cultureDetails,
+    showFinancialModal,
+    financialDetailsLoading,
+    openFinancialModal,
+    closeFinancialModal,
   };
 };

@@ -565,3 +565,38 @@ export const removeLikeComment = async (commentId: number, userId: number) => {
 
   return data;
 };
+
+export const getProjectCultureDetails = async (projectId: string) => {
+  const { data, error } = await supabase
+    .from('projet_culture')
+    .select(
+      `
+      id_projet_culture,
+      id_projet,
+      id_culture,
+      cout_exploitation_previsionnel,
+      rendement_previsionnel,
+      cout_exploitation_reel,
+      rendement_reel,
+      date_debut_previsionnelle,
+      date_debut_reelle,
+      created_at,
+      modified_at,
+      created_by,
+      rendement_financier_previsionnel,
+      culture:id_culture(
+        nom_culture,
+        prix_tonne
+      )
+    `
+    )
+    .eq('id_projet', parseInt(projectId));
+
+  console.log(data);
+
+  if (error) {
+    throw error;
+  }
+
+  return data || [];
+};

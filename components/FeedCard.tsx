@@ -4,6 +4,7 @@ import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons';
 import { AgriculturalProject } from '~/hooks/use-project-data';
 import { useProjectInteractions } from '~/hooks/use-project-interactions';
 import CommentsSection from './CommentsSection';
+import FinancialDetailsModal from './FinancialDetailsModal';
 
 interface FeedCardProps {
   project?: AgriculturalProject;
@@ -18,7 +19,17 @@ const FeedCard: React.FC<FeedCardProps> = ({ project, userId, onShare, onInvest 
   const [showMoreDetails, setShowMoreDetails] = useState(false);
 
   // Utiliser le hook pour les interactions
-  const { likesCount, isLiked, toggleProjectLike, comments } = useProjectInteractions({
+  const {
+    likesCount,
+    isLiked,
+    toggleProjectLike,
+    comments,
+    cultureDetails,
+    showFinancialModal,
+    financialDetailsLoading,
+    openFinancialModal,
+    closeFinancialModal,
+  } = useProjectInteractions({
     projectId: project?.id?.toString() || '0',
     userId,
   });
@@ -125,7 +136,7 @@ const FeedCard: React.FC<FeedCardProps> = ({ project, userId, onShare, onInvest 
         )}
 
         {/* Financial Details */}
-        <TouchableOpacity className="mb-4 rounded-md bg-gray-100 p-2">
+        <TouchableOpacity className="mb-4 rounded-md bg-gray-100 p-2" onPress={openFinancialModal}>
           <View className="mb-2 flex-row gap-2">
             <View className="flex-1">
               <Text className="text-xs text-gray-500">Coût d'exploitation</Text>
@@ -322,6 +333,15 @@ const FeedCard: React.FC<FeedCardProps> = ({ project, userId, onShare, onInvest 
           projectId={project.id?.toString() || '0'}
           userId={userId}
           isVisible={showComments}
+        />
+
+        {/* Financial Details Modal */}
+        <FinancialDetailsModal
+          visible={showFinancialModal}
+          onClose={closeFinancialModal}
+          project={project}
+          cultureDetails={cultureDetails}
+          loading={financialDetailsLoading}
         />
       </View>
     </View>
