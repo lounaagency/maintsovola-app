@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import ProjectsSummary from '~/components/ProjectsSummary';
 import { ProjectsSummaryProps } from '~/components/ProjectsSummary';
 
-import { ScreenContent } from '~/components/ScreenContent';
+
 
 export const simpleProjectsSummaryData: ProjectsSummaryProps = {
   totalProjects: 5,
