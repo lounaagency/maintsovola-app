@@ -4,6 +4,10 @@
     "strict": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
+    "typeRoots": [
+      "./node_modules/@types",
+      "./types"
+    ],
     "paths": {
       "@/*": [
         "*"
