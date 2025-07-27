@@ -1,4 +1,4 @@
-// app/(auth)/verify-otp.tsx - Version mise à jour
+// app/(auth)/verify-otp.tsx - Version React Native avec classes supportées
 import { Ionicons } from '@expo/vector-icons';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
@@ -146,15 +146,15 @@ export default function VerifyOTPScreen() {
         <View className="flex-1 justify-center px-6">
           {/* Header avec bouton retour */}
           <View className="mb-8 flex-row items-center">
-            <TouchableOpacity onPress={() => router.back()} className="-ml-2 mr-4 p-2">
+            <TouchableOpacity onPress={() => router.back()} className="mr-4 p-2">
               <Ionicons name="arrow-back" size={24} color="#374151" />
             </TouchableOpacity>
-            <View className="-mr-10 flex-1 items-center">
+            <View className="flex-1 items-center mr-6">
               <Logo size="lg" />
             </View>
           </View>
 
-          <View className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+          <View className="rounded-lg border border-gray-200 bg-white p-6">
             <Text className="mb-2 text-center text-2xl font-bold text-gray-900">
               Vérification OTP
             </Text>
@@ -164,7 +164,7 @@ export default function VerifyOTPScreen() {
               <Text className="font-medium text-gray-900">{email}</Text>
             </Text>
 
-            <View className="mb-8 flex-row justify-center gap-3">
+            <View className="mb-8 flex-row justify-center">
               {otp.map((digit, index) => (
                 <TextInput
                   key={index}
@@ -173,7 +173,14 @@ export default function VerifyOTPScreen() {
                       inputRefs.current[index] = ref;
                     }
                   }}
-                  className="h-12 w-12 rounded-lg border-2 border-gray-300 text-center text-lg font-bold focus:border-green-500"
+                  className="h-14 w-12 mx-1 rounded-lg border-2 border-gray-300 text-center text-lg font-bold"
+                  style={{
+                    borderColor: digit ? '#10B981' : '#D1D5DB',
+                    paddingTop: 0,
+                    paddingBottom: 0,
+                    textAlignVertical: 'center',
+                    includeFontPadding: false,
+                  }}
                   value={digit}
                   onChangeText={(value) => handleOtpChange(value, index)}
                   onKeyPress={({ nativeEvent }) => handleKeyPress(nativeEvent.key, index)}
