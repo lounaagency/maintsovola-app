@@ -5,7 +5,7 @@ import {
   getProjectById,
   getProjetctFromFollowing,
   postLikeProject,
-} from '~/services/feeds.service';
+} from '@/services/feeds.service';
 
 // Types pour les projets (à définir selon vos besoins)
 export interface AgriculturalProject {

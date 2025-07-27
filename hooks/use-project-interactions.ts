@@ -7,7 +7,7 @@ import {
   postLikeComment,
   removeLikeProject,
   removeLikeComment,
-} from '~/services/feeds.service';
+} from '@/services/feeds.service';
 
 interface Comment {
   id_commentaire: any;
