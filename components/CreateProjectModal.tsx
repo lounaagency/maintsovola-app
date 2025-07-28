@@ -6,15 +6,36 @@ import { supabase } from '@/utils/supabase';
 import { v4 as uuidv4 } from 'uuid';
 import { CultureData } from '@/types/cultureData';
 import { ProjectData } from '@/type/projectInterface';
+import { TerrainData } from '@/types/terrainData';
 
-const CreateProjectModal = ({ project = null, onClose } : {project: ProjectData } => {
+function daysBetween(dateA: string, dateB: string): number {
+  // new Date() comprend directement ce format
+  const dA = new Date(dateA);
+  const dB = new Date(dateB);
+
+  // Durée en millisecondes
+  const msPerDay = 24 * 60 * 60 * 1000;
+
+  // On arrondit au jour le plus proche
+  return Math.round((dB.getTime() - dA.getTime()) / msPerDay);
+}
+
+type CreateProjectModalProps = {
+  project?: ProjectData | null; // optionnel
+  onClose: () => void;
+};
+const CreateProjectModal = ({
+  project = null,        // valeur par défaut
+  onClose,
+}: CreateProjectModalProps) => {
   const [titre, setTitre] = useState('');
   const [description, setDescription] = useState('');
-  const [terrains, setTerrains] = useState([]);
+  const [terrains, setTerrains] = useState<TerrainData[] | null>([]);
   const [cultures, setCultures] = useState<CultureData[]>([]);
-  const [selectedTerrain, setSelectedTerrain] = useState(null);
-  const [selectedCulturesData, setSelectedCulturesData] = useState([]);
-  const [image, setImage] = useState(null);
+  const [selectedTerrain, setSelectedTerrain] = useState<TerrainData | null>(null);
+  const [selectedCulturesData, setSelectedCulturesData] =
+  useState<CultureData[]>([]);
+  const [image, setImage] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState('');
 
   useEffect(() => {
@@ -27,19 +48,25 @@ const CreateProjectModal = ({ project = null, onClose } : {project: ProjectData 
     fetchData();
   }, []);
 
-  useEffect(() => {
-    if (project && cultures.length > 0) {
-      setTitre(project.titre || '');
-      setDescription(project.description || '');
-      setSelectedTerrain(project.terrain || null);
-      setImageUrl(project.image || '');
-      setSelectedCulturesData(
-        cultures.filter(c => project.cultures?.includes(c.id))
-      );
-    }
-  }, [project, cultures]);
+useEffect(() => {
+  if (!project || !terrains?.length) return;
 
-  const toggleCulture = (id) => {
+  setTitre(project.titre ?? '');
+  setDescription(project.description ?? '');
+  setImageUrl(project.photos ?? '');
+
+  // Trouver l’objet TerrainData complet qui correspond à project.id_terrain
+  const found = terrains.find(t => t.id === project.id_terrain) ?? null;
+  setSelectedTerrain(found);
+
+  setSelectedCulturesData(
+    cultures.filter(c =>
+      project.projet_culture?.some(pc => pc.id_culture === c.id)
+    )
+  );
+}, [project, terrains, cultures]);
+
+  const toggleCulture = (id:number) => {
     const culture = cultures.find(c => c.id === id);
     if (!culture) return;
     setSelectedCulturesData(prev => {
@@ -71,11 +98,12 @@ const CreateProjectModal = ({ project = null, onClose } : {project: ProjectData 
 
   const summary = {
     nbCultures: selectedCulturesData.length,
-    dureeTotale: Math.max(...selectedCulturesData.map(c => c.duree || 0), 0),
-    coutTotal: selectedCulturesData.reduce((acc, c) => acc + (c.cout || 0), 0),
+    dureeTotale: Math.max(...selectedCulturesData.map(c => daysBetween(c.edit_at, c.create_at) || 0), 0),
+    coutTotal: selectedCulturesData.reduce((acc, c) => acc + (c.cout_ha || 0), 0),
   };
 
   const handleSubmit = async () => {
+  // const [selectedCulturesData, setSelectedCulturesData] = useState<CultureData[]>([]);
     const data = {
       titre,
       description,
@@ -88,9 +116,9 @@ const CreateProjectModal = ({ project = null, onClose } : {project: ProjectData 
     };
 
     let error;
-    if (project && project.id) {
+    if (project && project.id_projet) {
       // 🔁 MODIFICATION
-      ({ error } = await supabase.from('projet').update(data).eq('id', project.id));
+      ({ error } = await supabase.from('projet').update(data).eq('id', project.id_projet));
     } else {
       // ✅ CRÉATION
       ({ error } = await supabase.from('projet').insert([data]));
@@ -118,9 +146,9 @@ const CreateProjectModal = ({ project = null, onClose } : {project: ProjectData 
       <TextInput className="border p-2 mb-2 h-24" value={description} onChangeText={setDescription} multiline />
 
       <Text>Terrain</Text>
-      {terrains.map(t => (
-        <TouchableOpacity key={t.id} onPress={() => setSelectedTerrain(t.id)}>
-          <Text className={`p-2 ${selectedTerrain === t.id ? 'bg-green-300' : 'bg-gray-200'}`}>{t.nom}</Text>
+      {terrains?.map(t => (
+        <TouchableOpacity key={t.id} onPress={() => setSelectedTerrain(t)}>
+          <Text className={`p-2 ${selectedTerrain?.id === t.id ? 'bg-green-300' : 'bg-gray-200'}`}>{t.nom_terrain}</Text>
         </TouchableOpacity>
       ))}
 
@@ -145,7 +173,7 @@ const CreateProjectModal = ({ project = null, onClose } : {project: ProjectData 
           <View className="mt-2">
             <Text className="font-bold">Détail :</Text>
             {selectedCulturesData.map(c => (
-              <Text key={c.id}>- {c.nom}: {c.duree} j / {c.cout.toLocaleString()} Ar</Text>
+              <Text key={c.id}>- {c.nom}: {daysBetween(c.edit_at, c.create_at)} j / {c.cout_ha?.toLocaleString()} Ar</Text>
             ))}
           </View>
         )}

@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { supabase } from '~/lib/data';
+import { supabase } from '@/lib/data';
 
 interface Message {
   id: string;

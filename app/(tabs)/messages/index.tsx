@@ -1,5 +1,5 @@
 import { View, Text, StyleSheet } from 'react-native';
-import MessengerScreen from '~/components/Messengers';
+import MessengerScreen from '@/components/Messengers';
 
 export default function MessageScreen() {
   return (
