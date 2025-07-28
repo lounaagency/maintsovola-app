@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -9,8 +9,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 
-import { supabase } from '~/lib/data'; // Adjust the import path as necessary
-export default  function NotifScreen() {
+export default function NotifScreen() {
   const [notifications, setNotifications] = useState([
     {
       id: 1,
@@ -62,53 +61,14 @@ export default  function NotifScreen() {
     },
   ]);
 
-  const markAsRead =  (id: number) => {
+  const markAsRead = (id: number) => {
     setNotifications(prev =>
       prev.map(notif =>
         notif.id === id ? { ...notif, isRead: true } : notif
       )
     );
   };
- 
-const id = '1'; // Remplace par l'ID réel de l'utilisateur (ex: user?.id)
-  
-  useEffect(() => {
-    const getNotify = async () => {
-      const { data, error } = await supabase
-        .from('notification')
-        .select(`
-          id_notification,
-          id_expediteur,
-          id_destinataire,
-          message,
-          date_creation,
-          lu
-        `)
-        .eq('id_expediteur', id)
-        .eq('id_destinataire', id)
-        .order('date_creation', { ascending: false });
-  
-      if (error) {
-        console.error('Erreur Supabase :', error);
-      } else {
-        const formatted = (data || []).map((notif: any) => ({
-          id: notif.id_notification,
-          type: 'comment', // Tu peux adapter si tu as un champ type
-          user: 'Utilisateur', // à remplacer si tu récupères le nom
-          avatar: 'https://ui-avatars.com/api/?name=User',
-          action: 'vous a envoyé une notification',
-          time: new Date(notif.date_creation).toLocaleTimeString(),
-          isRead: notif.lu,
-          content: notif.message,
-        }));
-        console.log('Notifications Supabase :', JSON.stringify(formatted, null, 2));
-        setNotifications(formatted);
-      }
-    };
-  
-    getNotify();
-  }, [id]);
-  
+
   const markAllAsRead = () => {
     setNotifications(prev =>
       prev.map(notif => ({ ...notif, isRead: true }))
