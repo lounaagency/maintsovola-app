@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -9,15 +9,16 @@ import {
   Pressable,
   Linking,
   Alert,
-  Modal,
 } from 'react-native';
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons';
 import { AgriculturalProject } from '~/hooks/use-project-data';
 import { useProjectInteractions } from '~/hooks/use-project-interactions';
 import CommentsSection from './CommentsSection';
 import FinancialDetailsModal from './FinancialDetailsModal';
+import InvestmentModal from './InvestmentModal';
 import { useAuth } from '~/contexts/AuthContext';
 import { useRouter } from 'expo-router';
+import GaleryDetailModal from './GaleryDetailModal';
 
 interface FeedCardProps {
   project?: AgriculturalProject;
@@ -44,6 +45,10 @@ const FeedCard: React.FC<FeedCardProps> = ({
   const [showComments, setShowComments] = useState(false);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [showInvestModal, setShowInvestModal] = useState(false);
+  const [localCurrentFunding, setLocalCurrentFunding] = useState(project?.currentFunding || 0);
+  const [showGalery, setShowGallery] = useState(false);
+  const [galleryDefaultTab, setGalleryDefaultTab] = useState<'Photos' | 'Carte'>('Photos');
   const { user, profile } = useAuth();
   const userId = user?.id || undefined; // Remplacer par l'ID de l'utilisateur connecté, à récupérer depuis le contexte d'authentification
 
@@ -64,6 +69,13 @@ const FeedCard: React.FC<FeedCardProps> = ({
     userId,
   });
 
+  // Synchroniser l'état local avec les changements du projet
+  useEffect(() => {
+    if (project?.currentFunding !== undefined) {
+      setLocalCurrentFunding(project.currentFunding);
+    }
+  }, [project?.currentFunding]);
+
   if (!project) {
     return null;
   }
@@ -73,8 +85,8 @@ const FeedCard: React.FC<FeedCardProps> = ({
   const displayTitle = project.title || 'Projet agricole';
   const displayDescription = project.description || 'Description non disponible';
   const terrainName = project.location.region || 'Terrain'; // need verification
-  const currentFunding = project.currentFunding || 0;
-  const fundingGap = project.fundingGoal ? project.fundingGoal - currentFunding : 0;
+  const currentFunding = localCurrentFunding;
+  const fundingGap = project.fundingGoal ? project.fundingGoal - localCurrentFunding : 0;
 
   const handlePhotoNavigation = (direction: 'prev' | 'next') => {
     if (direction === 'prev') {
@@ -99,6 +111,20 @@ const FeedCard: React.FC<FeedCardProps> = ({
     toggleProjectLike();
   };
 
+  const handleOpenInvestModal = () => {
+    setShowInvestModal(true);
+  };
+
+  const handleInvestmentComplete = (amount: number) => {
+    // Calculer le nouveau financement
+    let newFunding = localCurrentFunding + amount;
+    if (newFunding > project.fundingGoal) {
+      newFunding = project.fundingGoal;
+    }
+
+    // Mettre à jour le financement local
+    setLocalCurrentFunding(newFunding);
+  };
   const projectId = project.id;
 
   const projectUrl = `https://maintsovola.com/feed?id_projet=${projectId}`; // Todo : Mbola mila amboarina ny URL
@@ -147,6 +173,21 @@ const FeedCard: React.FC<FeedCardProps> = ({
       setShowShareMenu(false);
     },
   };
+
+  const handleViewGallery = (defaultTab: 'Photos' | 'Carte' = 'Photos') => {
+    console.log('Opening gallery with photos:', project.photos);
+    setGalleryDefaultTab(defaultTab);
+    setShowGallery(true);
+  };
+
+  const handleViewPhotos = () => {
+    handleViewGallery('Photos');
+  };
+
+  const handleViewMap = () => {
+    handleViewGallery('Carte');
+  };
+
   return (
     <View className="mb-4 rounded-lg border border-gray-100 bg-white shadow-sm">
       {/* Header with user info */}
@@ -226,7 +267,7 @@ const FeedCard: React.FC<FeedCardProps> = ({
         <TouchableOpacity className="mb-4 rounded-md bg-gray-100 p-2" onPress={openFinancialModal}>
           <View className="mb-2 flex-row gap-2">
             <View className="flex-1">
-              <Text className="text-xs text-gray-500">Coût d'exploitation</Text>
+              <Text className="text-xs text-gray-500">Coût d&apos;exploitation</Text>
               <View className="flex-row items-center">
                 <Text className="font-medium">{formatCurrency(project.farmingCost)}</Text>
                 <FontAwesome5
@@ -295,11 +336,15 @@ const FeedCard: React.FC<FeedCardProps> = ({
           <View className="mb-4">
             {/* Action Buttons */}
             <View className="mb-4 flex-row gap-2">
-              <TouchableOpacity className="flex-1 flex-row items-center justify-center gap-2 rounded-md border border-green-600 px-3 py-2">
+              <TouchableOpacity
+                onPress={handleViewPhotos}
+                className="flex-1 flex-row items-center justify-center gap-2 rounded-md border border-green-600 px-3 py-2">
                 <Ionicons name="camera-outline" size={18} color="#16a34a" />
                 <Text className="text-sm font-medium text-green-600">Voir les photos</Text>
               </TouchableOpacity>
-              <TouchableOpacity className="flex-1 flex-row items-center justify-center gap-2 rounded-md border border-green-600 px-3 py-2">
+              <TouchableOpacity
+                onPress={handleViewMap}
+                className="flex-1 flex-row items-center justify-center gap-2 rounded-md border border-green-600 px-3 py-2">
                 <Ionicons name="map-outline" size={18} color="#16a34a" />
                 <Text className="text-sm font-medium text-green-600">Voir sur la carte</Text>
               </TouchableOpacity>
@@ -378,7 +423,7 @@ const FeedCard: React.FC<FeedCardProps> = ({
           {/* Invest Button */}
           {
             <TouchableOpacity
-              onPress={onInvest}
+              onPress={handleOpenInvestModal}
               disabled={fundingGap === 0}
               className={`flex-row items-center gap-1 rounded-md px-3 py-2 ${
                 fundingGap === 0 ? 'bg-gray-300' : 'bg-green-600'
@@ -487,6 +532,26 @@ const FeedCard: React.FC<FeedCardProps> = ({
           project={project}
           cultureDetails={cultureDetails}
           loading={financialDetailsLoading}
+        />
+
+        {/* Investment Modal */}
+        <InvestmentModal
+          visible={showInvestModal}
+          onClose={() => setShowInvestModal(false)}
+          project={project}
+          fundingGap={fundingGap}
+          currentFunding={currentFunding}
+          onInvestmentComplete={handleInvestmentComplete}
+          user={user}
+        />
+
+        {/* Gallery Modal */}
+        <GaleryDetailModal
+          projectId={project.id.toString()}
+          defaultTab={galleryDefaultTab}
+          visible={showGalery}
+          onClose={() => setShowGallery(false)}
+          photos={displayedPhotos}
         />
       </View>
     </View>
