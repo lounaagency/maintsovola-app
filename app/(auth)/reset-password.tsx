@@ -167,7 +167,7 @@ export default function ResetPasswordScreen() {
               <Logo size="lg" />
             </View>
 
-            <View className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <View className="rounded-lg border border-gray-200 bg-white p-6">
               <Text className="mb-2 text-center text-2xl font-bold text-gray-900">
                 Nouveau mot de passe
               </Text>
@@ -176,7 +176,7 @@ export default function ResetPasswordScreen() {
                 Créez un nouveau mot de passe sécurisé pour votre compte
               </Text>
 
-              <View className="flex gap-6">
+              <View style={{ gap: 24 }}>
                 <View>
                   <Label>
                     Nouveau mot de passe <Text className="text-red-500">*</Text>
@@ -257,7 +257,7 @@ export default function ResetPasswordScreen() {
                   {isSubmitting ? 'Réinitialisation...' : 'Réinitialiser le mot de passe'}
                 </Button>
 
-                <View className="pt-4 text-center">
+                <View className="items-center pt-4">
                   <TouchableOpacity onPress={() => router.replace('/(auth)/login')}>
                     <Text className="text-sm text-gray-600">
                       Retour à la <Text className="font-medium text-green-600">connexion</Text>
