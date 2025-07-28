@@ -13,7 +13,7 @@ export default function UserLayout() {
   const { projectsCount } = useProjectsCount(userId);
   const { followersCount } = useFollowersCount(userId);
   const { followingCount } = useFollowingCount(userId);
-  console.log("dedhbjhvjk", projectsCount);
+  // console.log("dedhbjhvjk", projectsCount);
   const handleFollowToggle = async () => {
     console.log('Toggle follow state');
   };
