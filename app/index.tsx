@@ -24,8 +24,10 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { TrendingUp, Users, MapPin, FileText, ArrowRight, ChevronRight } from 'lucide-react-native';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/data';
 import logo from '../assets/maintsovola_logo_pm.png';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useRouter } from "expo-router"
 
 const { width } = Dimensions.get('window');
 
@@ -496,7 +498,7 @@ const ProjectCarouselSkeleton: React.FC<{ count: number }> = ({ count }) => (
   </View>
 );
 
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+
 
 type RootStackParamList = {
   Feed: { culture?: string } | undefined;
@@ -508,6 +510,7 @@ type RootStackParamList = {
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
 
   // États
@@ -797,7 +800,7 @@ const HomeScreen: React.FC = () => {
 
         <TouchableOpacity
           style={styles.projectButton}
-          onPress={() => navigation.navigate('/(auth)/login', { id: item.id })}>
+          onPress={() => router.push({pathname: '/(auth)/login', params: { id: item.id.toString() }})}>
           <Text style={styles.projectButtonText}>Voir le projet</Text>
           <ArrowRight size={16} color="white" />
         </TouchableOpacity>
@@ -809,7 +812,7 @@ const HomeScreen: React.FC = () => {
     <Animated.View key={culture.id} entering={FadeInUp.delay(index * 100)} style={styles.cultureCard}>
       <TouchableOpacity
         style={{ alignItems: 'center' }}
-        onPress={() => navigation.navigate('/(auth)/login', { culture: culture.name })}>
+        onPress={() => router.navigate({pathname: '/(auth)/login', params: { culture: culture.name.toString() }})}>
         <Image
           source={{ uri: culture.image }}
           style={styles.cultureImage}
@@ -825,7 +828,7 @@ const HomeScreen: React.FC = () => {
     <Animated.View key={project.id} entering={FadeInRight.delay(index * 100)}>
       <TouchableOpacity
         style={styles.recentProjectItem}
-        onPress={() => navigation.navigate('/(auth)/login', { id: project.id })}>
+        onPress={() => router.navigate({pathname: '/(auth)/login', params: { id: project.id.toString() }})}>
         <View style={styles.recentProjectContent}>
           <View style={styles.recentProjectInfo}>
             <Text style={styles.recentProjectTitle}>{project.title}</Text>
@@ -841,7 +844,7 @@ const HomeScreen: React.FC = () => {
     <Animated.View key={index} entering={FadeInUp.delay(index * 150)} style={styles.quickNavItem}>
       <TouchableOpacity
         style={[styles.quickNavButton, { backgroundColor: item.color }]}
-        onPress={() => navigation.navigate(item.screen)}>
+        onPress={() => router.navigate(item.screen)}>
         <View style={styles.quickNavIconContainer}>
           <item.icon size={24} color="white" />
         </View>
@@ -913,7 +916,7 @@ const HomeScreen: React.FC = () => {
             <View style={{ alignItems: 'center' }}>
               <TouchableOpacity
                 style={styles.ctaButton}
-                onPress={() => navigation.navigate('/(auth)/login')}>
+                onPress={() => router.navigate('/(auth)/login')}>
                 <Text style={styles.ctaButtonText}>Découvrir les projets</Text>
                 <ChevronRight size={20} color="#10b981" />
               </TouchableOpacity>
@@ -929,7 +932,7 @@ const HomeScreen: React.FC = () => {
               <Text style={styles.sectionTitle}>Projets Vedettes</Text>
               <TouchableOpacity
                 style={styles.seeAllButton}
-                onPress={() => navigation.navigate('Feed')}>
+                onPress={() => router.navigate('/feed')}>
                 <Text style={styles.seeAllText}>Voir tout</Text>
                 <ArrowRight size={16} color="#10b981" />
               </TouchableOpacity>
@@ -1043,7 +1046,7 @@ const HomeScreen: React.FC = () => {
             <View style={styles.finalCtaButtons}>
               <TouchableOpacity
                 style={styles.finalCtaButtonPrimary}
-                onPress={() => navigation.navigate('/(auth)/login')}>
+                onPress={() => router.navigate('/(auth)/login')}>
                 <Text style={styles.finalCtaButtonTextPrimary}>Créer un compte</Text>
               </TouchableOpacity>
               <TouchableOpacity
