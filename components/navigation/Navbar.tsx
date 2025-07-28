@@ -120,7 +120,6 @@ const Navbar: React.FC<NavbarProps> = ({ activeNavIcon = "home", onNavChange }) 
         router.push("/messages")
         break
       case "profile":
-        router.push("/profil")
         setShowProfile(true)
         break
       default:
@@ -425,10 +424,10 @@ const Navbar: React.FC<NavbarProps> = ({ activeNavIcon = "home", onNavChange }) 
       <View className="bg-white border-t border-gray-200 p-1 shadow-sm mb-1">
         <View className="flex-row items-center" style={{ height: 48 }}>
           {navItems.map(renderNavIcon)}
+          <ProfilePopup />
         </View>
-      </View>
+    </View>
 
-      <ProfilePopup />
       {/* <NotificationPopup /> */}
     </>
   )

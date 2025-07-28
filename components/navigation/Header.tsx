@@ -9,7 +9,7 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onSearchPress, onMenuPress }) => {
   return (
-    <View className="bg-white border-b border-gray-200 shadow-sm">
+    <View className="w-full max-h-fit bg-white border-b border-gray-200 shadow-sm">
       <View className="flex-row items-center justify-between px-4 py-3">
         {/* Logo */}
         <View className="flex-row items-center">
@@ -33,13 +33,13 @@ const Header: React.FC<HeaderProps> = ({ onSearchPress, onMenuPress }) => {
         </View>
 
         {/* Menu hamburger */}
-        <TouchableOpacity
+        {/* <TouchableOpacity
           onPress={onMenuPress}
           className="w-10 h-10 rounded-full bg-gray-100 items-center justify-center"
           activeOpacity={0.7}
         >
           <MaterialIcons name="menu" size={24} color="#65676B" />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     </View>
   )
