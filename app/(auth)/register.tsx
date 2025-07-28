@@ -1,4 +1,4 @@
-// app/(auth)/register.tsx - Version mise à jour
+// app/(auth)/register.tsx - Version moderne multi-étapes
 import { Ionicons } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
 import { useState } from 'react';
@@ -13,13 +13,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Logo } from '../../components/Logo';
-import { Button } from '../../components/ui/Button';
 import { Checkbox } from '../../components/ui/Checkbox';
 import { Input } from '../../components/ui/Input';
 import { Label } from '../../components/ui/Label';
 import { useAuth } from '../../contexts/AuthContext';
 
-// Interface pour les critères de validation du mot de passe
 interface PasswordCriteria {
   minLength: boolean;
   hasUppercase: boolean;
@@ -28,8 +26,27 @@ interface PasswordCriteria {
   hasSpecialChar: boolean;
 }
 
+const STEPS = [
+  {
+    title: 'Informations personnelles',
+    description: 'Commençons par vos informations de base',
+    icon: 'person-outline' as const,
+  },
+  {
+    title: 'Contact',
+    description: 'Comment pouvons-nous vous joindre ?',
+    icon: 'mail-outline' as const,
+  },
+  {
+    title: 'Sécurité',
+    description: 'Créez un mot de passe sécurisé',
+    icon: 'shield-checkmark-outline' as const,
+  },
+];
+
 export default function RegisterScreen() {
   const { signUp } = useAuth();
+  const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
     nom: '',
     prenoms: '',
@@ -76,43 +93,73 @@ export default function RegisterScreen() {
     return Object.values(criteria).every(Boolean);
   };
 
-  const validateForm = () => {
+  const validateCurrentStep = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.nom.trim()) {
-      newErrors.nom = 'Le nom est obligatoire';
-    }
+    switch (currentStep) {
+      case 0:
+        if (!formData.nom.trim()) {
+          newErrors.nom = 'Le nom est obligatoire';
+        }
+        break;
 
-    if (!formData.email.trim() && !formData.telephone.trim()) {
-      newErrors.email = 'Au moins un email ou un numéro de téléphone est obligatoire';
-      newErrors.telephone = 'Au moins un email ou un numéro de téléphone est obligatoire';
-    }
+      case 1:
+        // Email is required for authentication
+        if (!formData.email.trim()) {
+          newErrors.email = "L'email est obligatoire pour l'inscription";
+        } else if (!validateEmail(formData.email)) {
+          newErrors.email = "Format d'email invalide";
+        }
 
-    if (formData.email && !validateEmail(formData.email)) {
-      newErrors.email = "Format d'email invalide";
-    }
+        // Phone validation - clean the phone number before validation
+        if (formData.telephone) {
+          const cleanPhone = formData.telephone.replace(/\s/g, '');
+          if (!validatePhone(cleanPhone)) {
+            newErrors.telephone = 'Format de téléphone invalide (032XXXXXXX, 033XXXXXXX, 034XXXXXXX, 038XXXXXXX)';
+          }
+        }
+        break;
 
-    if (formData.telephone && !validatePhone(formData.telephone)) {
-      newErrors.telephone = 'Format de téléphone invalide (032XXXXXXX)';
-    }
+      case 2:
+        if (!formData.password) {
+          newErrors.password = 'Le mot de passe est obligatoire';
+        } else if (!isPasswordRobust(passwordCriteria)) {
+          newErrors.password = 'Le mot de passe ne respecte pas tous les critères';
+        }
 
-    if (!formData.password) {
-      newErrors.password = 'Le mot de passe est obligatoire';
-    } else if (!isPasswordRobust(passwordCriteria)) {
-      newErrors.password = 'Le mot de passe ne respecte pas tous les critères de sécurité';
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
+        if (formData.password !== formData.confirmPassword) {
+          newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
+        }
+        break;
     }
 
     return newErrors;
   };
 
+  const handleNext = () => {
+    const stepErrors = validateCurrentStep();
+    if (Object.keys(stepErrors).length > 0) {
+      setErrors(stepErrors);
+      return;
+    }
+
+    setErrors({});
+    if (currentStep < STEPS.length - 1) {
+      setCurrentStep(currentStep + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+      setErrors({});
+    }
+  };
+
   const handleSubmit = async () => {
-    const formErrors = validateForm();
-    if (Object.keys(formErrors).length > 0) {
-      setErrors(formErrors);
+    const stepErrors = validateCurrentStep();
+    if (Object.keys(stepErrors).length > 0) {
+      setErrors(stepErrors);
       return;
     }
 
@@ -123,17 +170,17 @@ export default function RegisterScreen() {
       const userData = {
         nom: formData.nom,
         prenoms: formData.prenoms,
-        email: formData.email || undefined,
+        email: formData.email,
         telephone: formData.telephone || undefined,
         is_investor: formData.isInvestor,
         is_farming_owner: formData.isFarmingOwner,
         role: 'simple',
       };
 
-      const user = await signUp(formData.email || formData.telephone, formData.password, userData);
+      // Always use email as the primary identifier for Supabase Auth
+      const user = await signUp(formData.email, formData.password, userData);
 
-      // Check if email was provided for signup and user was created
-      if (formData.email && user) {
+      if (user) {
         Alert.alert(
           'Inscription réussie !',
           'Un code de vérification a été envoyé à votre email.',
@@ -151,14 +198,6 @@ export default function RegisterScreen() {
             },
           ]
         );
-      } else {
-        // Phone signup or no email - redirect to login
-        Alert.alert('Inscription réussie !', 'Votre compte a été créé avec succès.', [
-          {
-            text: 'OK',
-            onPress: () => router.replace('/(auth)/login'),
-          },
-        ]);
       }
     } catch (error: any) {
       Alert.alert('Erreur', error.message || "Une erreur est survenue lors de l'inscription");
@@ -170,7 +209,7 @@ export default function RegisterScreen() {
   const updateFormData = (field: string, value: any) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
 
-    // Validation en temps réel et suppression des erreurs
+    // Validation en temps réel
     if (field === 'nom' && value.trim() && errors.nom) {
       setErrors((prev) => ({ ...prev, nom: '' }));
     }
@@ -179,19 +218,19 @@ export default function RegisterScreen() {
       if (value && validateEmail(value) && errors.email) {
         setErrors((prev) => ({ ...prev, email: '' }));
       }
-      // Si email est rempli et telephone avait une erreur, la supprimer
-      if (value && errors.telephone?.includes('Au moins un')) {
-        setErrors((prev) => ({ ...prev, telephone: '' }));
-      }
     }
 
     if (field === 'telephone') {
-      if (value && validatePhone(value) && errors.telephone) {
-        setErrors((prev) => ({ ...prev, telephone: '' }));
-      }
-      // Si telephone est rempli et email avait une erreur, la supprimer
-      if (value && errors.email?.includes('Au moins un')) {
-        setErrors((prev) => ({ ...prev, email: '' }));
+      if (value) {
+        const cleanPhone = value.replace(/\s/g, '');
+        if (validatePhone(cleanPhone) && errors.telephone) {
+          setErrors((prev) => ({ ...prev, telephone: '' }));
+        }
+      } else {
+        // Clear error if field is empty (since telephone is optional)
+        if (errors.telephone) {
+          setErrors((prev) => ({ ...prev, telephone: '' }));
+        }
       }
     }
 
@@ -211,196 +250,320 @@ export default function RegisterScreen() {
     }
   };
 
-  // Composant pour afficher les critères de sécurité
   const CriteriaItem = ({ met, text }: { met: boolean; text: string }) => (
     <View className="mb-1 flex-row items-center">
-      <Ionicons
-        name={met ? 'checkmark-circle' : 'close-circle'}
-        size={16}
-        color={met ? '#10B981' : '#EF4444'}
-      />
-      <Text className={`ml-2 text-sm ${met ? 'text-green-600' : 'text-red-500'}`}>{text}</Text>
+      <View
+        className={`mr-2 h-4 w-4 items-center justify-center rounded-full ${
+          met ? 'bg-success-500' : 'bg-error-500'
+        }`}>
+        <Ionicons name={met ? 'checkmark' : 'close'} size={10} color="white" />
+      </View>
+      <Text className={`text-sm ${met ? 'text-success-700' : 'text-error-600'}`}>{text}</Text>
     </View>
   );
 
+  const ProgressIndicator = () => (
+    <View className="mb-8 flex-row items-center justify-center">
+      {STEPS.map((step, index) => (
+        <View key={index} className="flex-row items-center">
+          <View
+            className={`h-10 w-10 items-center justify-center rounded-full border-2 ${
+              index <= currentStep
+                ? 'border-primary-500 bg-primary-500'
+                : 'border-secondary-300 bg-secondary-100'
+            }`}>
+            {index < currentStep ? (
+              <Ionicons name="checkmark" size={20} color="white" />
+            ) : (
+              <Text
+                className={`font-semibold ${
+                  index <= currentStep ? 'text-white' : 'text-secondary-500'
+                }`}>
+                {index + 1}
+              </Text>
+            )}
+          </View>
+          {index < STEPS.length - 1 && (
+            <View
+              className={`mx-2 h-1 w-12 rounded-full ${
+                index < currentStep ? 'bg-primary-500' : 'bg-secondary-200'
+              }`}
+            />
+          )}
+        </View>
+      ))}
+    </View>
+  );
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 0:
+        return (
+          <View style={{ gap: 24 }}>
+            <View>
+              <Label className="mb-2 font-medium text-gray-700">
+                Nom <Text className="text-red-500">*</Text>
+              </Label>
+              <Input
+                value={formData.nom}
+                onChangeText={(value) => updateFormData('nom', value)}
+                placeholder="Votre nom"
+                error={!!errors.nom}
+                className={`rounded-xl border-gray-200 bg-gray-50 px-4 py-4 ${
+                  errors.nom ? 'border-red-500' : 'focus:border-primary-500'
+                }`}
+              />
+              {errors.nom && <Text className="mt-2 text-sm text-red-500">{errors.nom}</Text>}
+            </View>
+
+            <View>
+              <Label className="mb-2 font-medium text-gray-700">Prénoms</Label>
+              <Input
+                value={formData.prenoms}
+                onChangeText={(value) => updateFormData('prenoms', value)}
+                placeholder="Vos prénoms"
+                className="rounded-xl border-gray-200 bg-gray-50 px-4 py-4 focus:border-primary-500"
+              />
+            </View>
+          </View>
+        );
+
+      case 1:
+        return (
+          <View className="space-y-6">
+            <View>
+              <Label className="mb-2 font-medium text-secondary-700">
+                Email <Text className="text-error-500">*</Text>
+              </Label>
+              <Input
+                value={formData.email}
+                onChangeText={(value) => updateFormData('email', value)}
+                placeholder="votre@email.com"
+                keyboardType="email-address"
+                autoCapitalize="none"
+                error={!!errors.email}
+                className={`rounded-xl border-secondary-200 bg-secondary-50 px-4 py-4 ${
+                  errors.email ? 'border-error-500' : 'focus:border-primary-500'
+                }`}
+              />
+              {errors.email && <Text className="mt-2 text-sm text-error-500">{errors.email}</Text>}
+              <Text className="mt-1 text-xs text-secondary-500">
+                L&apos;email est requis pour la vérification du compte
+              </Text>
+            </View>
+
+            <View>
+              <Label className="mb-2 font-medium text-secondary-700">Téléphone (optionnel)</Label>
+              <Input
+                value={formData.telephone}
+                onChangeText={(value) => updateFormData('telephone', value)}
+                placeholder="032 00 000 00"
+                keyboardType="phone-pad"
+                error={!!errors.telephone}
+                className={`rounded-xl border-secondary-200 bg-secondary-50 px-4 py-4 ${
+                  errors.telephone ? 'border-error-500' : 'focus:border-primary-500'
+                }`}
+              />
+              {errors.telephone && (
+                <Text className="mt-2 text-sm text-error-500">{errors.telephone}</Text>
+              )}
+              <Text className="mt-1 text-xs text-secondary-500">
+                Formats acceptés: 032XXXXXXX, 033XXXXXXX, 034XXXXXXX, 038XXXXXXX
+              </Text>
+            </View>
+          </View>
+        );
+
+      case 2:
+        return (
+          <View className="space-y-6">
+            <View>
+              <Label className="mb-2 font-medium text-secondary-700">
+                Mot de passe <Text className="text-error-500">*</Text>
+              </Label>
+              <View className="relative">
+                <Input
+                  value={formData.password}
+                  onChangeText={(value) => updateFormData('password', value)}
+                  placeholder="••••••••"
+                  secureTextEntry={!showPassword}
+                  error={!!errors.password}
+                  className={`rounded-xl border-secondary-200 bg-secondary-50 px-4 py-4 pr-12 ${
+                    errors.password ? 'border-error-500' : 'focus:border-primary-500'
+                  }`}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  className="absolute right-4 top-4">
+                  <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#64748b" />
+                </TouchableOpacity>
+              </View>
+              {errors.password && (
+                <Text className="mt-2 text-sm text-error-500">{errors.password}</Text>
+              )}
+
+              {/* Critères de sécurité */}
+              {formData.password && (
+                <View className="mt-4 rounded-xl border border-secondary-200 bg-secondary-50 p-4">
+                  <Text className="mb-3 text-sm font-semibold text-secondary-700">
+                    Critères de sécurité :
+                  </Text>
+                  <CriteriaItem met={passwordCriteria.minLength} text="Au moins 8 caractères" />
+                  <CriteriaItem met={passwordCriteria.hasUppercase} text="Une lettre majuscule" />
+                  <CriteriaItem met={passwordCriteria.hasLowercase} text="Une lettre minuscule" />
+                  <CriteriaItem met={passwordCriteria.hasNumber} text="Un chiffre" />
+                  <CriteriaItem
+                    met={passwordCriteria.hasSpecialChar}
+                    text="Un caractère spécial (!@#$%^&*)"
+                  />
+                </View>
+              )}
+            </View>
+
+            <View>
+              <Label className="mb-2 font-medium text-secondary-700">
+                Confirmer mot de passe <Text className="text-error-500">*</Text>
+              </Label>
+              <View className="relative">
+                <Input
+                  value={formData.confirmPassword}
+                  onChangeText={(value) => updateFormData('confirmPassword', value)}
+                  placeholder="••••••••"
+                  secureTextEntry={!showConfirmPassword}
+                  error={!!errors.confirmPassword}
+                  className={`rounded-xl border-secondary-200 bg-secondary-50 px-4 py-4 pr-12 ${
+                    errors.confirmPassword ? 'border-error-500' : 'focus:border-primary-500'
+                  }`}
+                />
+                <TouchableOpacity
+                  onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-4 top-4">
+                  <Ionicons
+                    name={showConfirmPassword ? 'eye-off' : 'eye'}
+                    size={20}
+                    color="#64748b"
+                  />
+                </TouchableOpacity>
+              </View>
+              {errors.confirmPassword && (
+                <Text className="mt-2 text-sm text-error-500">{errors.confirmPassword}</Text>
+              )}
+            </View>
+
+            <View className="rounded-xl border border-primary-200 bg-primary-50 p-4">
+              <Label className="mb-3 font-medium text-primary-800">
+                Pourquoi rejoindre Maintso Vola ?
+              </Label>
+              <View className="space-y-3">
+                <Checkbox
+                  checked={formData.isInvestor}
+                  onPress={() => updateFormData('isInvestor', !formData.isInvestor)}
+                  label="Je souhaite investir dans l'agriculture"
+                />
+                <Checkbox
+                  checked={formData.isFarmingOwner}
+                  onPress={() => updateFormData('isFarmingOwner', !formData.isFarmingOwner)}
+                  label="Je cherche des investisseurs pour mon projet agricole"
+                />
+              </View>
+            </View>
+          </View>
+        );
+
+      default:
+        return null;
+    }
+  };
+
   return (
-    <SafeAreaView className="flex-1 bg-white">
+    <SafeAreaView className="flex-1 bg-green-50">
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1">
-        <ScrollView contentContainerStyle={{ flexGrow: 1 }} keyboardShouldPersistTaps="handled">
-          <View className="flex-1 justify-center px-6 py-12">
+        <ScrollView
+          contentContainerStyle={{ flexGrow: 1 }}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          <View className="flex-1 px-6 py-8">
+            {/* Header */}
             <View className="mb-8 items-center">
-              <Logo size="lg" />
+              <View className="mb-4">
+                <Logo size="lg" />
+              </View>
+              <Text className="mb-2 text-2xl font-bold text-gray-900">Créer votre compte</Text>
+              <Text className="text-center text-gray-600">
+                Rejoignez la communauté Mamboly Harena
+              </Text>
             </View>
 
-            <View className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
-              <Text className="mb-6 text-center text-2xl font-bold text-gray-900">Inscription</Text>
+            {/* Formulaire */}
+            <View className="rounded-3xl border border-white bg-white p-6 shadow-lg">
+              <ProgressIndicator />
 
-              <View className="flex gap-4">
-                <View>
-                  <Label>
-                    Nom <Text className="text-red-500">*</Text>
-                  </Label>
-                  <Input
-                    value={formData.nom}
-                    onChangeText={(value) => updateFormData('nom', value)}
-                    placeholder="Votre nom"
-                    error={!!errors.nom}
-                  />
-                  {errors.nom && <Text className="mt-1 text-sm text-red-500">{errors.nom}</Text>}
+              {/* En-tête de l'étape */}
+              <View className="mb-8 items-center">
+                <View className="mb-4 h-16 w-16 items-center justify-center rounded-2xl bg-green-100">
+                  <Ionicons name={STEPS[currentStep].icon} size={32} color="#16a34a" />
                 </View>
+                <Text className="mb-2 text-xl font-bold text-gray-900">
+                  {STEPS[currentStep].title}
+                </Text>
+                <Text className="text-center text-sm text-gray-600">
+                  {STEPS[currentStep].description}
+                </Text>
+              </View>
 
-                <View>
-                  <Label>Prénoms</Label>
-                  <Input
-                    value={formData.prenoms}
-                    onChangeText={(value) => updateFormData('prenoms', value)}
-                    placeholder="Vos prénoms"
-                  />
-                </View>
+              {renderStep()}
 
-                <View>
-                  <Label>
-                    Email {!formData.telephone && <Text className="text-red-500">*</Text>}
-                  </Label>
-                  <Input
-                    value={formData.email}
-                    onChangeText={(value) => updateFormData('email', value)}
-                    placeholder="votre@email.com"
-                    keyboardType="email-address"
-                    autoCapitalize="none"
-                    error={!!errors.email}
-                  />
-                  {errors.email && (
-                    <Text className="mt-1 text-sm text-red-500">{errors.email}</Text>
-                  )}
-                </View>
-
-                <View>
-                  <Label>
-                    Téléphone {!formData.email && <Text className="text-red-500">*</Text>}
-                  </Label>
-                  <Input
-                    value={formData.telephone}
-                    onChangeText={(value) => updateFormData('telephone', value)}
-                    placeholder="032 00 000 00"
-                    keyboardType="phone-pad"
-                    error={!!errors.telephone}
-                  />
-                  {errors.telephone && (
-                    <Text className="mt-1 text-sm text-red-500">{errors.telephone}</Text>
-                  )}
-                  <Text className="mt-1 text-xs text-gray-500">
-                    Format: 032XXXXXXX ou 033XXXXXXX
-                  </Text>
-                </View>
-
-                <View>
-                  <Label>
-                    Mot de passe <Text className="text-red-500">*</Text>
-                  </Label>
-                  <View className="relative">
-                    <Input
-                      value={formData.password}
-                      onChangeText={(value) => updateFormData('password', value)}
-                      placeholder="********"
-                      secureTextEntry={!showPassword}
-                      error={!!errors.password}
-                    />
+              {/* Boutons de navigation */}
+              <View className="mt-8">
+                <View className="flex-row" style={{ gap: 16 }}>
+                  {currentStep > 0 && (
                     <TouchableOpacity
-                      onPress={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3">
-                      <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#6B7280" />
+                      onPress={handlePrevious}
+                      className="flex-1 items-center rounded-xl border border-gray-200 bg-gray-100 py-4">
+                      <Text className="font-semibold text-gray-700">Précédent</Text>
                     </TouchableOpacity>
-                  </View>
-                  {errors.password && (
-                    <Text className="mt-1 text-sm text-red-500">{errors.password}</Text>
                   )}
 
-                  {/* Critères de sécurité */}
-                  {formData.password && (
-                    <View className="mt-3 rounded-lg bg-gray-50 p-3">
-                      <Text className="mb-2 text-sm font-medium text-gray-700">
-                        Critères de sécurité :
-                      </Text>
-                      <CriteriaItem met={passwordCriteria.minLength} text="Au moins 8 caractères" />
-                      <CriteriaItem
-                        met={passwordCriteria.hasUppercase}
-                        text="Une lettre majuscule"
-                      />
-                      <CriteriaItem
-                        met={passwordCriteria.hasLowercase}
-                        text="Une lettre minuscule"
-                      />
-                      <CriteriaItem met={passwordCriteria.hasNumber} text="Un chiffre" />
-                      <CriteriaItem
-                        met={passwordCriteria.hasSpecialChar}
-                        text="Un caractère spécial (!@#$%^&*)"
-                      />
-                    </View>
-                  )}
-                </View>
-
-                <View>
-                  <Label>
-                    Confirmer mot de passe <Text className="text-red-500">*</Text>
-                  </Label>
-                  <View className="relative">
-                    <Input
-                      value={formData.confirmPassword}
-                      onChangeText={(value) => updateFormData('confirmPassword', value)}
-                      placeholder="********"
-                      secureTextEntry={!showConfirmPassword}
-                      error={!!errors.confirmPassword}
-                    />
-                    <TouchableOpacity
-                      onPress={() => setShowConfirmPassword(!showConfirmPassword)}
-                      className="absolute right-3 top-3">
-                      <Ionicons
-                        name={showConfirmPassword ? 'eye-off' : 'eye'}
-                        size={20}
-                        color="#6B7280"
-                      />
-                    </TouchableOpacity>
+                  <View className="flex-1">
+                    {currentStep < STEPS.length - 1 ? (
+                      <TouchableOpacity
+                        onPress={handleNext}
+                        className="items-center rounded-xl bg-primary-600 py-4">
+                        <Text className="text-lg font-semibold text-white">Suivant</Text>
+                      </TouchableOpacity>
+                    ) : (
+                      <TouchableOpacity
+                        onPress={handleSubmit}
+                        disabled={
+                          isSubmitting ||
+                          (!!formData.password && !isPasswordRobust(passwordCriteria))
+                        }
+                        className={`items-center rounded-xl py-4 ${
+                          isSubmitting ||
+                          (!!formData.password && !isPasswordRobust(passwordCriteria))
+                            ? 'bg-gray-300'
+                            : 'bg-primary-600'
+                        }`}>
+                        <Text className="text-lg font-semibold text-white">
+                          {isSubmitting ? 'Inscription en cours...' : "S'inscrire"}
+                        </Text>
+                      </TouchableOpacity>
+                    )}
                   </View>
-                  {errors.confirmPassword && (
-                    <Text className="mt-1 text-sm text-red-500">{errors.confirmPassword}</Text>
-                  )}
-                </View>
-
-                <View className="pt-2">
-                  <Label>Pourquoi rejoindre Maintso Vola ?</Label>
-                  <View className="mt-2 flex gap-2">
-                    <Checkbox
-                      checked={formData.isInvestor}
-                      onPress={() => updateFormData('isInvestor', !formData.isInvestor)}
-                      label="Je souhaite investir dans l'agriculture"
-                    />
-                    <Checkbox
-                      checked={formData.isFarmingOwner}
-                      onPress={() => updateFormData('isFarmingOwner', !formData.isFarmingOwner)}
-                      label="Je cherche des investisseurs pour mon projet agricole"
-                    />
-                  </View>
-                </View>
-
-                <Button
-                  onPress={handleSubmit}
-                  loading={isSubmitting}
-                  disabled={!!formData.password && !isPasswordRobust(passwordCriteria)}>
-                  {isSubmitting ? 'Inscription en cours...' : "S'inscrire"}
-                </Button>
-
-                <View className="pt-4 text-center">
-                  <Text className="text-sm text-gray-600">
-                    Déjà un compte ?{' '}
-                    <Link href="/(auth)/login" className="font-medium text-green-600">
-                      Se connecter
-                    </Link>
-                  </Text>
                 </View>
               </View>
+            </View>
+
+            {/* Lien vers connexion */}
+            <View className="mt-6 items-center">
+              <Text className="text-center text-gray-600">
+                Déjà un compte ?{' '}
+                <Link href="/(auth)/login" className="font-semibold text-green-600">
+                  Se connecter
+                </Link>
+              </Text>
             </View>
           </View>
         </ScrollView>
