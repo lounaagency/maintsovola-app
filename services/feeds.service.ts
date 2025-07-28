@@ -410,7 +410,12 @@ export const getFilteredProjects = async (filters: {
   district?: string;
   commune?: string;
   culture?: string;
+  limit?: number;
+  page?: number;
 }) => {
+  const { limit, page, ...otherFilters } = filters;
+  const offset = limit && page ? (page - 1) * limit : undefined;
+
   let query = supabase
     .from('vue_projet_detaille')
     .select(
@@ -444,23 +449,28 @@ export const getFilteredProjects = async (filters: {
     )
     .order('created_at', { ascending: false });
 
-  if (filters.region) {
-    query = query.eq('nom_region', filters.region);
+  if (otherFilters.region) {
+    query = query.eq('nom_region', otherFilters.region);
   }
-  if (filters.district) {
-    query = query.eq('nom_district', filters.district);
+  if (otherFilters.district) {
+    query = query.eq('nom_district', otherFilters.district);
   }
-  if (filters.commune) {
-    query = query.eq('nom_commune', filters.commune);
+  if (otherFilters.commune) {
+    query = query.eq('nom_commune', otherFilters.commune);
   }
-  if (filters.culture) {
-    query = query.ilike('cultures', `%${filters.culture}%`);
+  if (otherFilters.culture) {
+    query = query.ilike('cultures', `%${otherFilters.culture}%`);
   }
-  if (filters.status) {
-    query = query.eq('statut', filters.status);
+  if (otherFilters.status) {
+    query = query.eq('statut', otherFilters.status);
   }
-  if (filters.userId) {
-    query = query.eq('id_tantsaha', filters.userId);
+  if (otherFilters.userId) {
+    query = query.eq('id_tantsaha', otherFilters.userId);
+  }
+
+  // Appliquer la pagination
+  if (limit !== undefined && offset !== undefined) {
+    query = query.range(offset, offset + limit - 1);
   }
 
   const { data, error } = await query;
