@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useProjects } from '@/hooks/useProject';
 import type { ProjectData } from '@/type/projectInterface';
-import { ModalAdd, ModalDetails } from '@/components/project/Modal';
+import { ModalAddStyled, ModalDetails } from '@/components/project/Modal';
 
 const colorCode = {
     "en attente": "#cbe043",
@@ -69,7 +69,7 @@ const ListTerrain = ({ item, selected }: ListTerrainProps) => {
         projectId={item.id_projet}
         isVisible={modalVisible}
         onClose={() => setModalVisible(false)}
-      /> bg-[${colorCode[item.statut  as keyof typeof colorCode]}]
+      />
     </>
   );
 };
@@ -142,7 +142,12 @@ export default function Project() {
           <Text className="ml-1 font-semibold text-white">Nouveau projet</Text>
         </TouchableOpacity>
 
-        <ModalAdd isVisible={isVisibleAdd} onClose={() => setisVisibleAdd(false)}></ModalAdd>
+        <ModalAddStyled
+          project={projects[0]}
+          isVisible={isVisibleAdd}
+          onClose={() => setisVisibleAdd(false)}
+        />
+        
       </View>
 
       {/* Filtres */}

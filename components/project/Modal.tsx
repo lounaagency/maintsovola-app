@@ -1,7 +1,7 @@
 import { useDetails } from "@/hooks/useProject";
 import { ProjectData } from "@/type/projectInterface";
 import { useState } from "react";
-import { ActivityIndicator, Modal, View, Text, Image, TouchableOpacity } from "react-native";
+import { ActivityIndicator, Modal, View, Text, Image, TouchableOpacity, ScrollView } from "react-native";
 import CreateProjectModal from "../CreateProjectModal";
 
 type ModalDetailsProps = {
@@ -74,20 +74,21 @@ export const ModalDetails = ({ projectId, isVisible, onClose }: ModalDetailsProp
 
 
 type CreateModalProps = {
-  project?: ProjectData | null; // optionnel
+  project?: any;
   onClose: () => void;
   isVisible: boolean;
 };
 
-export const ModalAdd = ({
-  project = null,        // valeur par défaut
-  onClose,
-  isVisible = false
-}: CreateModalProps
-) => {
-    return (
-        <Modal visible={isVisible} transparent animationType="slide">
-            <CreateProjectModal project={project} onClose={onClose}></CreateProjectModal>
-        </Modal>
-    )
-}
+export const ModalAddStyled = ({ project, onClose, isVisible }: CreateModalProps) => {
+  return (
+    <Modal visible={isVisible} transparent animationType="slide">
+      <View className="flex-1 justify-center bg-black/50 px-4">
+        <View className="rounded-xl bg-white p-6 border border-zinc-500">
+          <ScrollView>
+            <CreateProjectModal project={project} onClose={onClose} />
+          </ScrollView>
+        </View>
+      </View>
+    </Modal>
+  );
+};
