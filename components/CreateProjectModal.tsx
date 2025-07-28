@@ -1,6 +1,6 @@
 // CreateProjectModal.tsx (React Native - Création + Modification de projet)
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, Button, ScrollView, TouchableOpacity, Image } from 'react-native';
+import { View, Text, TextInput, Button, ScrollView, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/utils/supabase';
 import { v4 as uuidv4 } from 'uuid';
@@ -38,18 +38,23 @@ const CreateProjectModal = ({
   const [image, setImage] = useState<string | null>(null);
   const [imageUrl, setImageUrl] = useState('');
 
+  const [loading, setLoading] = useState<boolean>(false)
+
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true)
       const { data: terrainData } = await supabase.from('terrain').select('*');
       const { data: cultureData } = await supabase.from('culture').select('*');
       if (terrainData) setTerrains(terrainData);
       if (cultureData) setCultures(cultureData);
+      setLoading(false)
     };
     fetchData();
   }, []);
 
 useEffect(() => {
   if (!project || !terrains?.length) return;
+  setLoading(true)
 
   setTitre(project.titre ?? '');
   setDescription(project.description ?? '');
@@ -64,6 +69,7 @@ useEffect(() => {
       project.projet_culture?.some(pc => pc.id_culture === c.id)
     )
   );
+  setLoading(false)
 }, [project, terrains, cultures]);
 
   const toggleCulture = (id:number) => {
@@ -79,6 +85,7 @@ useEffect(() => {
   };
 
   const handlePickImage = async () => {
+    setLoading(true)
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true });
     if (!result.canceled) {
       const uri = result.assets[0].uri;
@@ -94,6 +101,7 @@ useEffect(() => {
         setImageUrl(publicUrl.publicUrl);
       }
     }
+    setLoading(false)
   };
 
   const summary = {
@@ -114,6 +122,7 @@ useEffect(() => {
       duree_totale: summary.dureeTotale,
       cout_total: summary.coutTotal,
     };
+    setLoading(true)
 
     let error;
     if (project && project.id_projet) {
@@ -131,6 +140,7 @@ useEffect(() => {
       console.error(error);
       alert('Erreur lors de l’enregistrement');
     }
+    setLoading(false)
   };
 
   return (
@@ -178,8 +188,9 @@ useEffect(() => {
           </View>
         )}
       </View>
+      {loading && <ActivityIndicator size={30} color="#009800" className="mt-5" />}
 
-      <Button title={project ? "Enregistrer les modifications" : "Créer"} onPress={handleSubmit} className="mt-4" />
+      <Button title={project ? "Enregistrer les modifications" : "Créer"} onPress={handleSubmit}/>
       {onClose && <Button title="Annuler" onPress={onClose} />}
     </ScrollView>
   );

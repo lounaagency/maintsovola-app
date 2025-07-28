@@ -1,12 +1,9 @@
 // Project.tsx
-import { error } from 'console';
 import { Plus, SearchIcon} from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
-  Image,
-  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,8 +11,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useDetails, useProjects } from '@/hooks/useProject';
+import { useProjects } from '@/hooks/useProject';
 import type { ProjectData } from '@/type/projectInterface';
+import { ModalAdd, ModalDetails } from '@/components/project/Modal';
 
 const colorCode = {
     "en attente": "#cbe043",
@@ -23,7 +21,6 @@ const colorCode = {
     "en cours": "#5de043",
     "terminé": "#2ce026",
   }
-
 
 /* ---------- Carte projet ---------- */
 type ListTerrainProps = { item: ProjectData; selected: string };
@@ -77,73 +74,6 @@ const ListTerrain = ({ item, selected }: ListTerrainProps) => {
   );
 };
 
-type ModalDetailsProps = {
-  projectId: number;
-  isVisible: boolean;
-  onClose: () => void;
-};
-
-const ModalDetails = ({ projectId, isVisible, onClose }: ModalDetailsProps) => {
-  const {projects, loading} = useDetails(projectId);
-  const [finJal, setFinJal] = useState<boolean>(false)
-  return (
-    <Modal visible={isVisible} transparent animationType="slide">
-      {loading && <ActivityIndicator size={30} color="#009800" className="mt-5" />}
-      <View className="flex-1 justify-center bg-black/50 px-4">
-        <View className="rounded-xl bg-white p-6 border border-zinc-500">
-          <Text className="text-2xl font-bold text-gray-600">Détails sur le projet:  {projects?.titre}</Text>
-          <View className="mt-4">
-            <Text className="font-semibold text-xl">Agriculteur:</Text>
-            <View className="mt-2 flex-row items-center justify-between">
-              <Text>{projects?.tantsaha?.nom} {projects?.tantsaha?.prenoms}</Text>
-              {projects?.tantsaha?.photo_profil && (
-                <Image
-                  source={{ uri: projects.tantsaha.photo_profil }}
-                  // style={{ width: 40, height: 40 }}
-                  width={50}
-                  height={50}
-                  className="rounded-full"
-                />
-              )}
-            </View>
-          </View>
-          <View>
-            <Text className='text-xl font-semibold'>Terrain:</Text>
-            <View>
-              <Text>nom: {projects?.terrain?.nom_terrain}</Text>
-              <Text>surface: {projects?.surface_ha} Ha</Text>
-              <Text>Localisation: {projects?.region?.nom_region}, {projects?.district?.nom_district}, {projects?.commune?.nom_commune}</Text>
-            </View>
-            <Text>Description: {projects?.description}</Text>
-          </View>
-          <View className='flex flex-row items-center justify-around text-base tracking-wide'>
-            <TouchableOpacity onPress={onClose} className="mt-3 p-3 items-center bg-yellow-500 rounded-lg px-6">
-              <Text className=" font-semibold">Fermer</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => {}} className='mt-3 p-3 items-center flex flex-row bg-zinc-200 rounded-lg px-6'>
-              <Text className='text-green-700 font-bold'>Modifier</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        <View className='bg-gray-300 min-h-8 rounded-lg p-1'>
-              <View className=' rounded flex flex-row justify-around'>
-                <TouchableOpacity className='p-1' onPress={() => setFinJal(false)}>
-                  <Text className={`text-2xl py-1 px-4 rounded-md w-full ${!finJal && 'bg-white'}`}>Financement</Text>
-                </TouchableOpacity>
-                <TouchableOpacity className='p-1' onPress={() => setFinJal(true)}>
-                  <Text className={`text-2xl py-1 px-4 rounded-md w-full ${finJal && 'bg-white'}`}>Jalons & Production</Text>
-                </TouchableOpacity>
-              </View>
-        </View>
-        <View className='bg-white rounded-lg p-4 mt-1 min-h-20'>
-
-        </View>
-      </View>
-    </Modal>
-  );
-};
-
 /* ---------- Barre de filtres ---------- */
 type StatusSelectProps = {
   selected: string;
@@ -180,6 +110,7 @@ export default function Project() {
   const [isSearchFocus, setIsSearchFocus] = useState(false);
   const { projects, loading } = useProjects();
   const [selected, setSelected] = useState('all');
+  const [isVisibleAdd, setisVisibleAdd] = useState<boolean>(false)
 
   return (
     <ScrollView className="px-5">
@@ -203,10 +134,15 @@ export default function Project() {
           />
         </View>
 
-        <TouchableOpacity className="mt-3 flex flex-row items-center justify-center rounded-lg bg-green-600 py-3">
+        <TouchableOpacity 
+          className="mt-3 flex flex-row items-center justify-center rounded-lg bg-green-600 py-3"
+          onPress={() => setisVisibleAdd(true)}
+        >
           <Plus color="#ffffff" />
           <Text className="ml-1 font-semibold text-white">Nouveau projet</Text>
         </TouchableOpacity>
+
+        <ModalAdd isVisible={isVisibleAdd} onClose={() => setisVisibleAdd(false)}></ModalAdd>
       </View>
 
       {/* Filtres */}
