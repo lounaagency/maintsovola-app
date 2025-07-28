@@ -1,7 +1,8 @@
 import { Stack } from 'expo-router';
 import { useState, useEffect } from 'react';
 import { StyleSheet, View, Text, ActivityIndicator } from 'react-native';
-import ProjectsSummary, { ProjectsSummaryProps } from '~/components/ProjectsSummary';
+import ProjectsSummary from '~/components/ProjectsSummary';
+import { ProjectsSummaryProps } from '~/types/projet'
 import { useTotalSurfaceForTantsaha } from '~/hooks/useTotalSurfaceForTantsaha';
 import { useTotalProjectNumberForTantsaha } from '~/hooks/useTotalProjectNumberForTantsaha'; // Assumed to return 'count'
 import { useTotalFundingForTantsaha } from '~/hooks/useTotalFundingForTantsaha';
@@ -73,7 +74,7 @@ const Projets = () => {
       </View>
     );
   }
-
+  console.log(summaryData)
   if (hasError) {
     return (
       <View style={styles.errorContainer}>

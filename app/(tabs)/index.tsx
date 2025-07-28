@@ -6,17 +6,16 @@ import { useAuth } from '~/contexts/AuthContext';
 import '../../global.css'
 
 export default function Index() {
-    const router = useRouter();
-    const { user } = useAuth();
+  const router = useRouter();
+  const { user } = useAuth();
 
-    useEffect(() => {
+  useEffect(() => {
     if (user) {
-        router.replace('/feed'); // ou '/(tabs)/feed'
+      router.replace('/feed'); // ou '/(tabs)/feed'
     } else {
-        router.replace('/(auth)/login');
+      router.replace('/(auth)/login');
     }
-    }, [user]);
+  }, [user]);
 
-    return null;
+  return null;
 }
-
