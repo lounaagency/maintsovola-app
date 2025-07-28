@@ -2,53 +2,13 @@ import React from 'react';
 import { View, Text, ScrollView, Dimensions } from 'react-native';
 import { BarChart, PieChart } from 'react-native-chart-kit';
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-// You could also import FontAwesome, etc., if needed for other icons:
-// import FontAwesome from '@expo/vector-icons/FontAwesome';
-
-// Assuming formatCurrency is a simple utility function.
-// This function should be defined in a utilities file or at the top level.
+import { ProjectCategoryData,ProjectCultureCount, ProjectStatusData, ProjectsSummaryProps } from '~/types/projet'  
 const formatCurrency = (amount: number) => {
-  // Use 'fr-MG' for French (Madagascar) locale and MGA for Malagasy Ariary
   return new Intl.NumberFormat('fr-MG', {
     style: 'currency',
     currency: 'MGA',
   }).format(amount);
 };
-
-interface ProjectCultureCount {
-  name: string;
-  count: number;
-  fill: string;
-}
-
-interface ProjectCategoryData {
-  count: number;
-  area: number;
-  funding: number;
-  profit: number;
-  ownerProfit: number;
-  cultures: ProjectCultureCount[];
-}
-
-interface ProjectStatusData {
-  enFinancement: ProjectCategoryData;
-  enCours: ProjectCategoryData;
-  termine: ProjectCategoryData;
-}
-
-export interface ProjectsSummaryProps {
-  totalProjects: number;
-  totalArea: number;
-  totalFunding: number;
-  totalProfit: number;
-  ownerProfit: number;
-  projectsByStatus: ProjectStatusData;
-  projectsByCulture?: Array<{
-    name: string;
-    count: number;
-    fill: string;
-  }>;
-}
 
 const ProjectsSummary: React.FC<ProjectsSummaryProps> = ({
   totalProjects,
@@ -185,8 +145,8 @@ const ProjectsSummary: React.FC<ProjectsSummaryProps> = ({
     <ScrollView className="flex-1 p-4 bg-gray-100">
       <Text className="text-lg font-semibold mb-4 text-gray-800">Résumé des projets</Text>
 
-      <View className="flex-row flex-wrap justify-between -mx-2 mb-4">
-        <View className="w-1/2 px-2 mb-4 bg-white rounded-lg shadow-md p-4">
+      <View className="flex-1 mb-4">
+        <View className="px-2 mb-4 bg-white rounded-lg shadow-md p-4">
           <View className="pb-2">
             <Text className="text-sm text-gray-500">Total des projets</Text>
             <View className="flex-row items-center">
@@ -196,7 +156,7 @@ const ProjectsSummary: React.FC<ProjectsSummaryProps> = ({
           </View>
         </View>
 
-        <View className="w-1/2 px-2 mb-4 bg-white rounded-lg shadow-md p-4">
+        <View className="px-2 mb-4 bg-white rounded-lg shadow-md p-4">
           <View className="pb-2">
             <Text className="text-sm text-gray-500">Surface totale</Text>
             <View className="flex-row items-center">
@@ -206,7 +166,7 @@ const ProjectsSummary: React.FC<ProjectsSummaryProps> = ({
           </View>
         </View>
 
-        <View className="w-1/2 px-2 mb-4 bg-white rounded-lg shadow-md p-4">
+        <View className="px-2 mb-4 bg-white rounded-lg shadow-md p-4">
           <View className="pb-2">
             <Text className="text-sm text-gray-500">Financements reçus</Text>
             <View className="flex-row items-center">
@@ -216,7 +176,7 @@ const ProjectsSummary: React.FC<ProjectsSummaryProps> = ({
           </View>
         </View>
 
-        <View className="w-1/2 px-2 mb-4 bg-white rounded-lg shadow-md p-4">
+        <View className="px-2 mb-4 bg-white rounded-lg shadow-md p-4">
           <View className="pb-2">
             <Text className="text-sm text-gray-500">Bénéfice propriétaire</Text>
             <View className="flex-row items-center">
