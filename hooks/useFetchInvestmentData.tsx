@@ -1,6 +1,6 @@
 // hooks/useFetchInvestmentData.ts
 import { useState, useEffect } from 'react';
-import { supabase } from '../utils/supabase';
+import { supabase } from '~/lib/data';
 
 interface InvestmentData {
   totalInvested: number;

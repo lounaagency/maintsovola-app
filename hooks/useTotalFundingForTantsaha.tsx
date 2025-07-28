@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '~/utils/supabase'; // Adjust this path to your supabase client initialization
+import { supabase } from '~/lib/data'; // Adjust this path to your supabase client initialization
 
 // Define the structure of the related projet data
 interface FetchedProjetDataForFunding {
