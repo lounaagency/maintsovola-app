@@ -7,6 +7,9 @@ import {
   TouchableOpacity,
   Dimensions,
   Pressable,
+  Linking,
+  Alert,
+  Modal,
 } from 'react-native';
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons';
 import { AgriculturalProject } from '~/hooks/use-project-data';
@@ -40,6 +43,7 @@ const FeedCard: React.FC<FeedCardProps> = ({
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [showComments, setShowComments] = useState(false);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
   const { user, profile } = useAuth();
   const userId = user?.id || undefined; // Remplacer par l'ID de l'utilisateur connecté, à récupérer depuis le contexte d'authentification
 
@@ -95,6 +99,54 @@ const FeedCard: React.FC<FeedCardProps> = ({
     toggleProjectLike();
   };
 
+  const projectId = project.id;
+
+  const projectUrl = `https://maintsovola.com/feed?id_projet=${projectId}`; // Todo : Mbola mila amboarina ny URL
+
+  const shareHandlers = {
+    facebook: async () => {
+      try {
+        const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(projectUrl)}`;
+        await Linking.openURL(url);
+      } catch (error) {
+        Alert.alert('Erreur', "Impossible d'ouvrir Facebook");
+      }
+      setShowShareMenu(false);
+    },
+    whatsapp: async () => {
+      try {
+        const url = `whatsapp://send?text=${encodeURIComponent(projectUrl)}`;
+        await Linking.openURL(url);
+      } catch (error) {
+        Alert.alert('Erreur', "WhatsApp n'est pas installé");
+      }
+      setShowShareMenu(false);
+    },
+    mail: async () => {
+      try {
+        const url = `mailto:?body=${encodeURIComponent(projectUrl)}`;
+        await Linking.openURL(url);
+      } catch (error) {
+        Alert.alert('Erreur', "Impossible d'ouvrir l'application mail");
+      }
+      setShowShareMenu(false);
+    },
+    copyLink: async () => {
+      try {
+        // Pour React Native, on peut utiliser une approche différente selon la plateforme
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+          await navigator.clipboard.writeText(projectUrl);
+        } else {
+          // Fallback pour les environnements où clipboard n'est pas disponible
+          Alert.alert('Lien copié', projectUrl);
+        }
+        Alert.alert('Succès', 'Lien copié dans le presse-papiers');
+      } catch (error) {
+        Alert.alert('Erreur', 'Impossible de copier le lien');
+      }
+      setShowShareMenu(false);
+    },
+  };
   return (
     <View className="mb-4 rounded-lg border border-gray-100 bg-white shadow-sm">
       {/* Header with user info */}
@@ -371,13 +423,62 @@ const FeedCard: React.FC<FeedCardProps> = ({
           </TouchableOpacity>
 
           {/* Share Button */}
-          <TouchableOpacity onPress={onShare} className="flex-row items-center gap-1 px-2 py-1">
-            <Ionicons name="share-outline" size={18} color="#6b7280" />
-          </TouchableOpacity>
+          <View className="relative">
+            <TouchableOpacity
+              onPress={() => setShowShareMenu(!showShareMenu)}
+              className="flex-row items-center gap-1 px-2 py-1">
+              <Ionicons name="share-outline" size={18} color="#6b7280" />
+            </TouchableOpacity>
+
+            {/* Share Menu Dropdown */}
+            {showShareMenu && (
+              <View
+                className="elevation-5 absolute bottom-full right-0 mb-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg"
+                style={{ zIndex: 999 }}>
+                <TouchableOpacity
+                  onPress={shareHandlers.facebook}
+                  className="flex-row items-center gap-3 border-b border-gray-100 px-4 py-3">
+                  <Ionicons name="logo-facebook" size={20} color="#1877F2" />
+                  <Text className="text-sm text-gray-700">Partager sur Facebook</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={shareHandlers.whatsapp}
+                  className="flex-row items-center gap-3 border-b border-gray-100 px-4 py-3">
+                  <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+                  <Text className="text-sm text-gray-700">Partager sur WhatsApp</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={shareHandlers.mail}
+                  className="flex-row items-center gap-3 border-b border-gray-100 px-4 py-3">
+                  <Ionicons name="mail-outline" size={20} color="#6b7280" />
+                  <Text className="text-sm text-gray-700">Envoyer par email</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={shareHandlers.copyLink}
+                  className="flex-row items-center gap-3 rounded-b-lg px-4 py-3">
+                  <Ionicons name="copy-outline" size={20} color="#6b7280" />
+                  <Text className="text-sm text-gray-700">Copier le lien</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Comments Section */}
         <CommentsSection projectId={project.id || 0} userId={userId} isVisible={showComments} />
+
+        {/* Share Menu Overlay */}
+        {showShareMenu && (
+          <TouchableOpacity
+            onPress={() => setShowShareMenu(false)}
+            className="absolute inset-0"
+            style={{ zIndex: 998 }}
+            activeOpacity={1}
+          />
+        )}
 
         {/* Financial Details Modal */}
         <FinancialDetailsModal
