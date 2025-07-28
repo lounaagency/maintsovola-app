@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '~/utils/supabase';
+import { supabase } from '~/lib/data';
 
 interface UsetTotalProjectNumberResult {
   totalProject: number | null;

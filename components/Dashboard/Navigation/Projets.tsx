@@ -85,7 +85,7 @@ const Projets = () => {
       </View>
     );
   }
-
+  
   return (
     <>
       <Stack.Screen options={{ title: 'Projets' }} />
