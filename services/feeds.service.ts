@@ -21,8 +21,17 @@ type LikeData = {
   id_utilisateur: number;
 };
 
-export const getAllProjects = async () => {
-  const { data, error } = await supabase
+type GetAllProjectsParams = {
+  limit?: number;
+  page?: number;
+};
+
+export const getAllProjects = async (params?: GetAllProjectsParams) => {
+  const limit = params?.limit;
+  const page = params?.page;
+  const offset = limit && page ? (page - 1) * limit : undefined;
+
+  let query = supabase
     .from('vue_projet_detaille')
     .select(
       `
@@ -55,41 +64,45 @@ export const getAllProjects = async () => {
     )
     .order('created_at', { ascending: false });
 
+  if (limit !== undefined && offset !== undefined) {
+    query = query.range(offset, offset + limit - 1);
+  }
+
+  const { data, error } = await query;
+
   if (error) {
+    console.error('Error fetching project data:', error);
     throw error;
   }
 
-  // Récupérer les photos pour chaque projet
-  if (data && data.length > 0) {
-    const projectIds = data.map((project) => project.id_projet);
-    const { data: photosData, error: photosError } = await supabase
-      .from('projet')
-      .select(
-        'id_projet, photos, created_at, id_terrain, terrain:id_terrain(id_terrain, nom_terrain)'
-      )
-      .in('id_projet', projectIds);
+  if (!data || data.length === 0) return [];
 
-    if (photosError) {
-      console.error('Error fetching project photos:', photosError);
-    } else {
-      // Combiner les données des projets avec leurs photos
-      const projectsWithPhotos = data.map((project) => {
-        const projectPhotos = photosData?.find((p) => p.id_projet === project.id_projet);
-        return {
-          ...project,
-          photos: projectPhotos?.photos || null,
-          created_at: projectPhotos?.created_at || project.created_at,
-          id_terrain: projectPhotos?.id_terrain || null,
-          terrain: projectPhotos?.terrain || null,
-        };
-      });
+  const projectIds = data.map((project) => project.id_projet);
+  const { data: photosData, error: photosError } = await supabase
+    .from('projet')
+    .select(
+      'id_projet, photos, created_at, id_terrain, terrain:id_terrain(id_terrain, nom_terrain)'
+    )
+    .in('id_projet', projectIds);
 
-      console.log(`Found ${projectsWithPhotos.length} projects with photos`);
-      return projectsWithPhotos;
-    }
+  if (photosError) {
+    console.error('Error fetching project photos:', photosError);
+    // Tu peux choisir ici si tu veux throw ou retourner sans photos
+    return data; // fallback sans photos
   }
 
-  return data;
+  const projectsWithPhotos = data.map((project) => {
+    const projectPhotos = photosData?.find((p) => p.id_projet === project.id_projet);
+    return {
+      ...project,
+      photos: projectPhotos?.photos || null,
+      created_at: projectPhotos?.created_at || project.created_at,
+      id_terrain: projectPhotos?.id_terrain || null,
+      terrain: projectPhotos?.terrain || null,
+    };
+  });
+
+  return projectsWithPhotos;
 };
 
 export const getProjectById = async (projectId: string) => {
@@ -158,28 +171,27 @@ export const getProjectById = async (projectId: string) => {
   return projectWithPhotos;
 };
 
-export const getProjetctFromFollowing = async (userId: string) => {
+export const getProjetctFromFollowing = async (
+  userId: string,
+  options?: { limit?: number; page?: number }
+) => {
   try {
-    // Première étape : récupérer tous les utilisateurs que l'utilisateur actuel suit
+    const { limit, page } = options || {};
+    const offset = limit && page ? (page - 1) * limit : undefined;
+
+    // 1. Récupérer les utilisateurs suivis
     const { data: followingUsers, error: followingError } = await supabase
       .from('abonnement')
       .select('id_suivi')
       .eq('id_abonne', userId);
 
-    if (followingError) {
-      throw followingError;
-    }
+    if (followingError) throw followingError;
+    if (!followingUsers || followingUsers.length === 0) return [];
 
-    // Si l'utilisateur ne suit personne, retourner un tableau vide
-    if (!followingUsers || followingUsers.length === 0) {
-      return [];
-    }
-
-    // Extraire les IDs des utilisateurs suivis
     const followedUserIds = followingUsers.map((follow) => follow.id_suivi);
 
-    // Deuxième étape : récupérer les projets de ces utilisateurs suivis
-    const { data, error } = await supabase
+    // 2. Construire la requête pour récupérer les projets
+    let query = supabase
       .from('vue_projet_detaille')
       .select(
         `
@@ -213,46 +225,44 @@ export const getProjetctFromFollowing = async (userId: string) => {
       .in('id_tantsaha', followedUserIds)
       .order('created_at', { ascending: false });
 
-    if (error) {
-      throw error;
+    if (limit !== undefined && offset !== undefined) {
+      query = query.range(offset, offset + limit - 1);
     }
 
-    // Récupérer les photos pour chaque projet
-    if (data && data.length > 0) {
-      const projectIds = data.map((project) => project.id_projet);
-      const { data: photosData, error: photosError } = await supabase
-        .from('projet')
-        .select(
-          'id_projet, photos, created_at, id_terrain, terrain:id_terrain(id_terrain, nom_terrain)'
-        )
-        .in('id_projet', projectIds);
+    const { data, error } = await query;
+    if (error) throw error;
 
-      if (photosError) {
-        console.error('Error fetching project photos:', photosError);
-      } else {
-        // Combiner les données des projets avec leurs photos
-        const projectsWithPhotos = data.map((project) => {
-          const projectPhotos = photosData?.find((p) => p.id_projet === project.id_projet);
-          return {
-            ...project,
-            photos: projectPhotos?.photos ? projectPhotos.photos.split(',') : [],
-            created_at: projectPhotos?.created_at || project.created_at,
-            id_terrain: projectPhotos?.id_terrain || null,
-            terrain: projectPhotos?.terrain || null,
-          };
-        });
+    if (!data || data.length === 0) return [];
 
-        console.log(
-          `Found ${projectsWithPhotos.length} projects from ${followedUserIds.length} followed users`
-        );
-        return projectsWithPhotos;
-      }
+    // 3. Récupérer les photos liées aux projets
+    const projectIds = data.map((project) => project.id_projet);
+    const { data: photosData, error: photosError } = await supabase
+      .from('projet')
+      .select(
+        'id_projet, photos, created_at, id_terrain, terrain:id_terrain(id_terrain, nom_terrain)'
+      )
+      .in('id_projet', projectIds);
+
+    if (photosError) {
+      console.error('Error fetching project photos:', photosError);
     }
+
+    // 4. Fusionner projets + photos
+    const projectsWithPhotos = data.map((project) => {
+      const projectPhotos = photosData?.find((p) => p.id_projet === project.id_projet);
+      return {
+        ...project,
+        photos: projectPhotos?.photos ? projectPhotos.photos.split(',') : [],
+        created_at: projectPhotos?.created_at || project.created_at,
+        id_terrain: projectPhotos?.id_terrain || null,
+        terrain: projectPhotos?.terrain || null,
+      };
+    });
 
     console.log(
-      `Found ${data?.length || 0} projects from ${followedUserIds.length} followed users`
+      `Found ${projectsWithPhotos.length} projects from ${followedUserIds.length} followed users`
     );
-    return data || [];
+    return projectsWithPhotos;
   } catch (error) {
     console.error('Error fetching projects from following:', error);
     throw error;
@@ -394,6 +404,8 @@ export const getProjectLikesWithUserStatus = async (projectId: number, userId?: 
 };
 
 export const getFilteredProjects = async (filters: {
+  userId?: string;
+  status?: string;
   region?: string;
   district?: string;
   commune?: string;
@@ -443,6 +455,12 @@ export const getFilteredProjects = async (filters: {
   }
   if (filters.culture) {
     query = query.ilike('cultures', `%${filters.culture}%`);
+  }
+  if (filters.status) {
+    query = query.eq('statut', filters.status);
+  }
+  if (filters.userId) {
+    query = query.eq('id_tantsaha', filters.userId);
   }
 
   const { data, error } = await query;
