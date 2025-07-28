@@ -1,12 +1,13 @@
-import { View, Text, StyleSheet } from 'react-native';
-import Messages from '~/components/Messages';
-import MessengerScreen from '~/components/MessengerScreen';
+// import React from 'react';
+import { View } from 'react-native';
+import MessageList from '../../../components/messaging/MessageList';
 
-export default function MessageScreen() {
+export default function MessagesScreen() {
   return (
-    <View className='flex-1 w-full justify-center items-center bg-gray-50'>
-      {/* <Messages /> */}
-      <MessengerScreen />
+    <View className="flex-1">
+      {/* <MessageList /> */}
+      <MessageList />
     </View>
   );
 }
+
