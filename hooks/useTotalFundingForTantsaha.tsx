@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '~/utils/supabase'; // Adjust this path to your supabase client initialization
+import { supabase } from '~/lib/data'; // Adjust this path to your supabase client initialization
 
 // Define the structure of the related projet data
 interface FetchedProjetDataForFunding {
@@ -50,8 +50,7 @@ export const useTotalFundingForTantsaha = (tantsahaId: string | null): UseTotalF
             .eq('projet.id_tantsaha', tantsahaId)
         ) as { data: FetchedInvestissementWithProjet[] | null, error: any };
 
-        console.log("Fetched investissements:", investissements)
-
+        // console.log("Fetched investissements:", investissements)
         if (supabaseError) {
           console.error('Supabase Error fetching investissement data:', supabaseError.message);
           setError(supabaseError.message);
