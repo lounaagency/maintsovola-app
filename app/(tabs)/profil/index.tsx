@@ -2,16 +2,21 @@ import { Stack } from 'expo-router';
 import { View, ActivityIndicator, Text } from 'react-native';
 import ProfileHeader from '~/components/Dashboard/Profile/Header';
 import ProfileTabs from '~/components/Dashboard/Profile/Tabs';
-import { useProfile, useProjectsCount, useFollowersCount, useFollowingCount } from '~/hooks/userhooks';
-
+import { useAuth } from '~/contexts/AuthContext';
+import { useProfile } from '~/hooks/userhooks';
+import { useProjectsCount } from '~/hooks/userhooks';
+import { useFollowersCount } from '~/hooks/userhooks';
+import { useFollowingCount } from '~/hooks/userhooks';
 
 export default function UserLayout() {
-  const userId = '28ff57b7-fb92-4593-b239-5c56b0f44560';
+  const { user } = useAuth();
+  const userId : string  = user?.id ?? "";
+
   const { profile, loading } = useProfile(userId);
   const { projectsCount } = useProjectsCount(userId);
   const { followersCount } = useFollowersCount(userId);
   const { followingCount } = useFollowingCount(userId);
-  console.log("dedhbjhvjk", projectsCount);
+
   const handleFollowToggle = async () => {
     console.log('Toggle follow state');
   };
