@@ -4,16 +4,14 @@
     "strict": true,
     "jsx": "react-jsx",
     "baseUrl": ".",
-    "typeRoots": [
-      "./node_modules/@types",
-      "./types"
-    ],
+    "typeRoots": ["./node_modules/@types", "./types"],
     "paths": {
       "~/*": [
-        "*"
-      // "@/*": [
-      //   "./*"
-      ]
+        "./*"
+        // "@/*": [
+        //   "./*"
+      ],
+      "@/*": ["./*"]
     }
   },
   "include": [
@@ -22,5 +20,6 @@
     ".expo/types/**/*.ts",
     "expo-env.d.ts",
     "nativewind-env.d.ts"
+    // "components/navigation/TopNavbar.js"
   ]
 }
