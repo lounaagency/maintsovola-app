@@ -160,19 +160,15 @@ export default function InvestmentsScreen() {
                   {project.completedJalons}/{project.totalJalons} ({Math.round(project.jalonProgress)}%)
                 </Text>
               </View>
-              <View className="h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                {project.jalonProgress > 0 ? (
-                  <View
-                    className={`h-full rounded-full ${
-                      project.jalonProgress < 33 ? 'bg-red-500' :
-                      project.jalonProgress < 66 ? 'bg-yellow-400' :
-                      'bg-green-500'
-                    }`}
-                    style={{ width: `${project.jalonProgress}%` }}
-                  />
-                ) : (
-                  <View className="h-full bg-red-500 rounded-full" style={{ width: 8 }} />
-                )}
+              <View className="h-2.5 bg-gray-200 rounded-full overflow-hidden">                
+                <View
+                  className={`h-full rounded-full ${
+                    project.jalonProgress < 33 ? 'bg-red-500' :
+                    project.jalonProgress < 66 ? 'bg-yellow-400' :
+                    'bg-green-500'
+                  }`}
+                  style={{ width: `${project.jalonProgress}%` }}
+                />                
               </View>
             </View>
           </TouchableOpacity>
