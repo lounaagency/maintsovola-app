@@ -33,7 +33,7 @@ const CreateProjectModal = ({ project = null, onClose }: CreateProjectModalProps
 
   useEffect(() => {
     const fetchData = async () => {
-      setLoading(true);
+      
       const { data: terrainData } = await supabase.from('terrain').select('*');
       const { data: cultureData } = await supabase.from('culture').select('*');
       if (terrainData) setTerrains(terrainData);
@@ -45,12 +45,12 @@ const CreateProjectModal = ({ project = null, onClose }: CreateProjectModalProps
 
   useEffect(() => {
     if (!project || !terrains?.length) return;
-    setLoading(true);
+    
     setTitre(project.titre ?? '');
     setDescription(project.description ?? '');
     setImageUrl(project.photos ?? '');
     const found = terrains.find(t => t.id === project.id_terrain) ?? null;
-    setSelectedTerrain(found);
+    
     setSelectedCulturesData(
       cultures.filter(c =>
         project.projet_culture?.some(pc => pc.id_culture === c.id)
@@ -72,7 +72,7 @@ const CreateProjectModal = ({ project = null, onClose }: CreateProjectModalProps
   };
 
   const handlePickImage = async () => {
-    setLoading(true);
+    
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images, allowsEditing: true });
     if (!result.canceled) {
       const uri = result.assets[0].uri;
@@ -106,7 +106,7 @@ const CreateProjectModal = ({ project = null, onClose }: CreateProjectModalProps
       duree_totale: summary.dureeTotale,
       cout_total: summary.coutTotal,
     };
-    setLoading(true);
+    
     let error;
     if (project && project.id_projet) {
       ({ error } = await supabase.from('projet').update(data).eq('id', project.id_projet));
@@ -133,7 +133,7 @@ const CreateProjectModal = ({ project = null, onClose }: CreateProjectModalProps
       <View className="mb-4">
         <Text className="text-lg font-semibold text-gray-700 mb-2">Titre</Text>
         <TextInput 
-          className="border border-gray-300 p-3 rounded-lg bg-gray-50" 
+          className="border border-gray-300 p-3 rounded-lg bg-gray-50 focus:border-green-500" 
           value={titre} 
           onChangeText={setTitre} 
         />
@@ -143,7 +143,7 @@ const CreateProjectModal = ({ project = null, onClose }: CreateProjectModalProps
       <View className="mb-4">
         <Text className="text-lg font-semibold text-gray-700 mb-2">Description</Text>
         <TextInput 
-          className="border border-gray-300 p-3 rounded-lg bg-gray-50 h-24" 
+          className="border border-gray-300 p-3 rounded-lg bg-gray-50 h-24 focus:border-green-500" 
           value={description} 
           onChangeText={setDescription} 
           multiline 
@@ -153,7 +153,7 @@ const CreateProjectModal = ({ project = null, onClose }: CreateProjectModalProps
       {/* Terrain */}
       <View className="mb-4">
         <Text className="text-lg font-semibold text-gray-700 mb-2">Terrain</Text>
-        {terrains?.map(t => (
+        {terrains ? terrains?.map(t => (
           <TouchableOpacity 
             key={t.id} 
             onPress={() => setSelectedTerrain(t)}
@@ -163,7 +163,10 @@ const CreateProjectModal = ({ project = null, onClose }: CreateProjectModalProps
               {t.nom_terrain}
             </Text>
           </TouchableOpacity>
-        ))}
+        )):(
+          <Text>Auccun terrain disponnible ...</Text>
+        )
+      }
       </View>
 
       {/* Cultures */}
