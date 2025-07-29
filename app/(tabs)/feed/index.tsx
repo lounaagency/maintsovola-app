@@ -5,6 +5,7 @@ import { useProjectData } from '~/hooks/use-project-data';
 import FeedList from '~/components/FeedList';
 import FilterContainer from '~/components/FilterContainer';
 import FilterInterface from '~/components/FilterInterface';
+import { PaginatedFeedExample } from './PaginatedFeedExample';
 
 export default function FeedScreen() {
   const tabs = ['Pour vous', 'Abonnements'];
