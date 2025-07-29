@@ -1,5 +1,4 @@
-
-import { TerrainData } from './terrain';
+import { TerrainData } from './Terrain';
 
 export interface TerrainFormData {
   id_terrain?: number;
@@ -11,7 +10,7 @@ export interface TerrainFormData {
   id_commune?: string; // Form will use string for select inputs
   acces_eau?: boolean;
   acces_route?: boolean;
-  id_tantsaha?: string;
+  id_tantsaha?: string | null;
   geom?: number[][]; // Coordonnées du polygone [[lng, lat], [lng, lat], ...]
   photos?: string | string[]; // Can be string (comma-separated) or array of strings
   // Champs pour le rapport de validation
@@ -29,14 +28,14 @@ export const convertFormDataToTerrainData = (formData: TerrainFormData): Terrain
     id_district: formData.id_district ? Number(formData.id_district) : null,
     id_commune: formData.id_commune ? Number(formData.id_commune) : null,
     surface_proposee: parseFloat((formData.surface_proposee || 0).toFixed(2)) || 0,
-    nom_terrain: formData.nom_terrain || ""
+    nom_terrain: formData.nom_terrain || '',
   };
-  
+
   // Add surface_validee if provided
   if (formData.surface_validee) {
     terrainData.surface_validee = parseFloat(formData.surface_validee.toFixed(2));
   }
-  
+
   // Si des coordonnées de polygone ont été définies, créer un objet geom au format GeoJSON
   if (formData.geom && formData.geom.length >= 3) {
     // La propriété geom attend un objet GeoJSON Polygon
@@ -48,31 +47,31 @@ export const convertFormDataToTerrainData = (formData: TerrainFormData): Terrain
     // If no valid polygon is drawn, set geom to null
     terrainData.geom = null;
   }
-  
+
   // Make sure photos is always a string for the API
   if (Array.isArray(formData.photos)) {
     terrainData.photos = formData.photos.join(',');
   }
-  
+
   // Ajout des champs de validation si présents
   if (formData.date_validation) {
     terrainData.date_validation = formData.date_validation;
   }
-  
+
   if (formData.rapport_validation) {
     terrainData.rapport_validation = formData.rapport_validation;
   }
-  
+
   if (formData.photos_validation) {
-    terrainData.photos_validation = Array.isArray(formData.photos_validation) 
-      ? formData.photos_validation.join(',') 
+    terrainData.photos_validation = Array.isArray(formData.photos_validation)
+      ? formData.photos_validation.join(',')
       : formData.photos_validation;
   }
 
   if (formData.validation_decision) {
     terrainData.validation_decision = formData.validation_decision;
   }
-  
+
   return terrainData;
 };
 
@@ -88,43 +87,48 @@ export const convertTerrainDataToFormData = (terrainData: TerrainData): TerrainF
     acces_eau: Boolean(terrainData.acces_eau),
     acces_route: Boolean(terrainData.acces_route),
   };
-  
+
   // Add surface_validee if present
   if (terrainData.surface_validee) {
     formData.surface_validee = terrainData.surface_validee;
   }
-  
+
   // Convert photos string to array if needed
   if (typeof terrainData.photos === 'string') {
-    formData.photos = terrainData.photos.split(',').filter(p => p.trim() !== '');
+    formData.photos = terrainData.photos.split(',').filter((p) => p.trim() !== '');
   } else if (Array.isArray(terrainData.photos)) {
     formData.photos = terrainData.photos;
   }
-  
+
   // Extraire les coordonnées du polygone si elles existent
-  if (terrainData.geom && terrainData.geom.type === 'Polygon' && 
-      terrainData.geom.coordinates && terrainData.geom.coordinates[0]) {
+  if (
+    terrainData.geom &&
+    terrainData.geom.type === 'Polygon' &&
+    terrainData.geom.coordinates &&
+    terrainData.geom.coordinates[0]
+  ) {
     formData.geom = terrainData.geom.coordinates[0];
   }
-  
+
   // Conversion des champs de validation
   if (terrainData.date_validation) {
     formData.date_validation = terrainData.date_validation;
   }
-  
+
   if (terrainData.rapport_validation) {
     formData.rapport_validation = terrainData.rapport_validation;
   }
-  
+
   if (terrainData.photos_validation) {
-    formData.photos_validation = typeof terrainData.photos_validation === 'string' 
-      ? terrainData.photos_validation.split(',').filter(p => p.trim() !== '')
-      : terrainData.photos_validation;
+    formData.photos_validation =
+      typeof terrainData.photos_validation === 'string'
+        ? terrainData.photos_validation.split(',').filter((p) => p.trim() !== '')
+        : terrainData.photos_validation;
   }
 
   if (terrainData.validation_decision) {
     formData.validation_decision = terrainData.validation_decision;
   }
-  
+
   return formData;
 };
