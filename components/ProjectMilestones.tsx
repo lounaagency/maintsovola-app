@@ -131,3 +131,34 @@ const ProjectMilestones = ({ projectId }:{projectId: number}) => {
 };
 
 export default ProjectMilestones;
+
+type Props = {
+  projectId: number;
+  isVisible: boolean;
+  onClose: () => void;
+};
+
+export const ProjectMilestonesModal = ({ projectId, isVisible, onClose }: Props) => {
+  return (
+    <Modal
+      visible={isVisible}
+      transparent
+      animationType="slide"
+      onRequestClose={onClose}
+    >
+      <View className="flex-1 justify-center bg-black/50 px-4">
+        <View className="rounded-xl bg-white p-6 border border-zinc-500 max-h-[90%]">
+          <ScrollView>
+            <ProjectMilestones projectId={projectId} />
+          </ScrollView>
+          <TouchableOpacity
+            onPress={onClose}
+            className="mt-4 p-3 bg-yellow-500 rounded-lg items-center"
+          >
+            <Text className="font-semibold">Retour aux détails</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </Modal>
+  );
+};
