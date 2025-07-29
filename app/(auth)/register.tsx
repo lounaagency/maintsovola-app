@@ -1,7 +1,10 @@
-// app/(auth)/register.tsx - Version moderne multi-étapes
+// app/(auth)/register.tsx - Multi-step form avec style login
+import { Button } from '@/components/ui/Button';
+import { Input } from '@/components/ui/Input';
+import { Label } from '@/components/ui/Label';
 import { Ionicons } from '@expo/vector-icons';
 import { Link, router } from 'expo-router';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -10,13 +13,13 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Animated,
+  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Logo } from '../../components/Logo';
-import { Checkbox } from '../../components/ui/Checkbox';
-import { Input } from '../../components/ui/Input';
-import { Label } from '../../components/ui/Label';
 import { useAuth } from '../../contexts/AuthContext';
+
+const { width } = Dimensions.get('window');
 
 interface PasswordCriteria {
   minLength: boolean;
@@ -26,27 +29,11 @@ interface PasswordCriteria {
   hasSpecialChar: boolean;
 }
 
-const STEPS = [
-  {
-    title: 'Informations personnelles',
-    description: 'Commençons par vos informations de base',
-    icon: 'person-outline' as const,
-  },
-  {
-    title: 'Contact',
-    description: 'Comment pouvons-nous vous joindre ?',
-    icon: 'mail-outline' as const,
-  },
-  {
-    title: 'Sécurité',
-    description: 'Créez un mot de passe sécurisé',
-    icon: 'shield-checkmark-outline' as const,
-  },
-];
-
 export default function RegisterScreen() {
   const { signUp } = useAuth();
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(1);
+  const totalSteps = 3;
+
   const [formData, setFormData] = useState({
     nom: '',
     prenoms: '',
@@ -57,16 +44,40 @@ export default function RegisterScreen() {
     isInvestor: false,
     isFarmingOwner: false,
   });
+
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [focusedInput, setFocusedInput] = useState<string | null>(null);
   const [passwordCriteria, setPasswordCriteria] = useState<PasswordCriteria>({
     minLength: false,
     hasUppercase: false,
     hasLowercase: false,
     hasNumber: false,
     hasSpecialChar: false,
+  });
+
+  // Animations
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(50)).current;
+  const buttonScaleAnim = useRef(new Animated.Value(1)).current;
+  const stepTransitionAnim = useRef(new Animated.Value(0)).current;
+
+  // Animation d'entrée
+  useState(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 600,
+        useNativeDriver: true,
+      }),
+    ]).start();
   });
 
   const validateEmail = (email: string) => {
@@ -96,44 +107,73 @@ export default function RegisterScreen() {
   const validateCurrentStep = () => {
     const newErrors: Record<string, string> = {};
 
-    switch (currentStep) {
-      case 0:
-        if (!formData.nom.trim()) {
-          newErrors.nom = 'Le nom est obligatoire';
-        }
-        break;
+    if (currentStep === 1) {
+      if (!formData.nom.trim()) {
+        newErrors.nom = 'Le nom est obligatoire';
+      }
+      if (!formData.prenoms.trim()) {
+        newErrors.prenoms = 'Le prénom est obligatoire';
+      }
+    }
 
-      case 1:
-        // Email is required for authentication
-        if (!formData.email.trim()) {
-          newErrors.email = "L'email est obligatoire pour l'inscription";
-        } else if (!validateEmail(formData.email)) {
-          newErrors.email = "Format d'email invalide";
-        }
+    if (currentStep === 2) {
+      if (!formData.email.trim()) {
+        newErrors.email = "L'email est obligatoire";
+      } else if (!validateEmail(formData.email)) {
+        newErrors.email = "Format d'email invalide";
+      }
 
-        // Phone validation - clean the phone number before validation
-        if (formData.telephone) {
-          const cleanPhone = formData.telephone.replace(/\s/g, '');
-          if (!validatePhone(cleanPhone)) {
-            newErrors.telephone = 'Format de téléphone invalide (032XXXXXXX, 033XXXXXXX, 034XXXXXXX, 038XXXXXXX)';
-          }
+      if (formData.telephone) {
+        const cleanPhone = formData.telephone.replace(/\s/g, '');
+        if (!validatePhone(cleanPhone)) {
+          newErrors.telephone = 'Format de téléphone invalide';
         }
-        break;
+      }
+    }
 
-      case 2:
-        if (!formData.password) {
-          newErrors.password = 'Le mot de passe est obligatoire';
-        } else if (!isPasswordRobust(passwordCriteria)) {
-          newErrors.password = 'Le mot de passe ne respecte pas tous les critères';
-        }
+    if (currentStep === 3) {
+      if (!formData.password) {
+        newErrors.password = 'Le mot de passe est obligatoire';
+      } else if (!isPasswordRobust(passwordCriteria)) {
+        newErrors.password = 'Le mot de passe ne respecte pas tous les critères';
+      }
 
-        if (formData.password !== formData.confirmPassword) {
-          newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
-        }
-        break;
+      if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = 'Les mots de passe ne correspondent pas';
+      }
     }
 
     return newErrors;
+  };
+
+  const animateButtonPress = () => {
+    Animated.sequence([
+      Animated.timing(buttonScaleAnim, {
+        toValue: 0.95,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+      Animated.timing(buttonScaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
+
+  const animateStepTransition = () => {
+    Animated.sequence([
+      Animated.timing(stepTransitionAnim, {
+        toValue: 1,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(stepTransitionAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start();
   };
 
   const handleNext = () => {
@@ -144,27 +184,34 @@ export default function RegisterScreen() {
     }
 
     setErrors({});
-    if (currentStep < STEPS.length - 1) {
-      setCurrentStep(currentStep + 1);
-    }
+    animateStepTransition();
+    
+    setTimeout(() => {
+      if (currentStep < totalSteps) {
+        setCurrentStep(currentStep + 1);
+      }
+    }, 200);
   };
 
   const handlePrevious = () => {
-    if (currentStep > 0) {
-      setCurrentStep(currentStep - 1);
-      setErrors({});
-    }
+    animateStepTransition();
+    setTimeout(() => {
+      if (currentStep > 1) {
+        setCurrentStep(currentStep - 1);
+      }
+    }, 200);
   };
 
   const handleSubmit = async () => {
-    const stepErrors = validateCurrentStep();
-    if (Object.keys(stepErrors).length > 0) {
-      setErrors(stepErrors);
+    const formErrors = validateCurrentStep();
+    if (Object.keys(formErrors).length > 0) {
+      setErrors(formErrors);
       return;
     }
 
     setIsSubmitting(true);
     setErrors({});
+    animateButtonPress();
 
     try {
       const userData = {
@@ -177,7 +224,6 @@ export default function RegisterScreen() {
         role: 'simple',
       };
 
-      // Always use email as the primary identifier for Supabase Auth
       const user = await signUp(formData.email, formData.password, userData);
 
       if (user) {
@@ -200,7 +246,21 @@ export default function RegisterScreen() {
         );
       }
     } catch (error: any) {
-      Alert.alert('Erreur', error.message || "Une erreur est survenue lors de l'inscription");
+      const newErrors: Record<string, string> = {};
+      
+      if (error?.message) {
+        if (error.message.includes('email') && error.message.includes('already')) {
+          newErrors.email = 'Cet email est déjà utilisé.';
+        } else if (error.message.includes('Network') || error.message.includes('network')) {
+          newErrors.email = 'Problème de connexion réseau.';
+        } else {
+          newErrors.email = error.message;
+        }
+      } else {
+        newErrors.email = "Une erreur est survenue lors de l'inscription";
+      }
+      
+      setErrors(newErrors);
     } finally {
       setIsSubmitting(false);
     }
@@ -212,6 +272,10 @@ export default function RegisterScreen() {
     // Validation en temps réel
     if (field === 'nom' && value.trim() && errors.nom) {
       setErrors((prev) => ({ ...prev, nom: '' }));
+    }
+
+    if (field === 'prenoms' && value.trim() && errors.prenoms) {
+      setErrors((prev) => ({ ...prev, prenoms: '' }));
     }
 
     if (field === 'email') {
@@ -227,7 +291,6 @@ export default function RegisterScreen() {
           setErrors((prev) => ({ ...prev, telephone: '' }));
         }
       } else {
-        // Clear error if field is empty (since telephone is optional)
         if (errors.telephone) {
           setErrors((prev) => ({ ...prev, telephone: '' }));
         }
@@ -250,90 +313,102 @@ export default function RegisterScreen() {
     }
   };
 
-  const CriteriaItem = ({ met, text }: { met: boolean; text: string }) => (
-    <View className="mb-1 flex-row items-center">
-      <View
-        className={`mr-2 h-4 w-4 items-center justify-center rounded-full ${
-          met ? 'bg-success-500' : 'bg-error-500'
-        }`}>
-        <Ionicons name={met ? 'checkmark' : 'close'} size={10} color="white" />
-      </View>
-      <Text className={`text-sm ${met ? 'text-success-700' : 'text-error-600'}`}>{text}</Text>
-    </View>
-  );
+  const getStepTitle = () => {
+    switch (currentStep) {
+      case 1: return 'Informations personnelles';
+      case 2: return 'Coordonnées';
+      case 3: return 'Sécurité';
+      default: return 'Inscription';
+    }
+  };
 
-  const ProgressIndicator = () => (
-    <View className="mb-8 flex-row items-center justify-center">
-      {STEPS.map((step, index) => (
-        <View key={index} className="flex-row items-center">
-          <View
-            className={`h-10 w-10 items-center justify-center rounded-full border-2 ${
-              index <= currentStep
-                ? 'border-primary-500 bg-primary-500'
-                : 'border-secondary-300 bg-secondary-100'
-            }`}>
-            {index < currentStep ? (
-              <Ionicons name="checkmark" size={20} color="white" />
-            ) : (
-              <Text
-                className={`font-semibold ${
-                  index <= currentStep ? 'text-white' : 'text-secondary-500'
-                }`}>
-                {index + 1}
-              </Text>
-            )}
-          </View>
-          {index < STEPS.length - 1 && (
-            <View
-              className={`mx-2 h-1 w-12 rounded-full ${
-                index < currentStep ? 'bg-primary-500' : 'bg-secondary-200'
-              }`}
-            />
-          )}
-        </View>
-      ))}
-    </View>
-  );
+  const getStepSubtitle = () => {
+    switch (currentStep) {
+      case 1: return 'Commençons par vos informations de base';
+      case 2: return 'Comment pouvons-nous vous contacter ?';
+      case 3: return 'Sécurisez votre compte';
+      default: return '';
+    }
+  };
 
   const renderStep = () => {
     switch (currentStep) {
-      case 0:
+      case 1:
         return (
-          <View style={{ gap: 24 }}>
+          <View style={{ gap: 20 }}>
+            {/* Nom */}
             <View>
-              <Label className="mb-2 font-medium text-gray-700">
-                Nom <Text className="text-red-500">*</Text>
+              <Label className="mb-2 text-sm font-semibold text-gray-700">
+                Nom
               </Label>
               <Input
                 value={formData.nom}
                 onChangeText={(value) => updateFormData('nom', value)}
                 placeholder="Votre nom"
                 error={!!errors.nom}
-                className={`rounded-xl border-gray-200 bg-gray-50 px-4 py-4 ${
-                  errors.nom ? 'border-red-500' : 'focus:border-primary-500'
+                onFocus={() => setFocusedInput('nom')}
+                onBlur={() => setFocusedInput(null)}
+                className={`bg-gray-100 px-4 py-4 text-gray-900 ${
+                  errors.nom
+                    ? 'border-red-500'
+                    : focusedInput === 'nom'
+                      ? 'border-green-500'
+                      : 'border-gray-300'
                 }`}
+                style={{
+                  borderRadius: 20,
+                  borderWidth: focusedInput === 'nom' ? 2 : 1,
+                }}
               />
-              {errors.nom && <Text className="mt-2 text-sm text-red-500">{errors.nom}</Text>}
+              {errors.nom && (
+                <View className="mt-1 flex-row items-start">
+                  <Ionicons name="alert-circle" size={16} color="#DC2626" style={{ marginTop: 1 }} />
+                  <Text className="ml-1 flex-1 text-sm text-red-500 leading-5">{errors.nom}</Text>
+                </View>
+              )}
             </View>
 
+            {/* Prénoms */}
             <View>
-              <Label className="mb-2 font-medium text-gray-700">Prénoms</Label>
+              <Label className="mb-2 text-sm font-semibold text-gray-700">
+                Prénoms
+              </Label>
               <Input
                 value={formData.prenoms}
                 onChangeText={(value) => updateFormData('prenoms', value)}
                 placeholder="Vos prénoms"
-                className="rounded-xl border-gray-200 bg-gray-50 px-4 py-4 focus:border-primary-500"
+                error={!!errors.prenoms}
+                onFocus={() => setFocusedInput('prenoms')}
+                onBlur={() => setFocusedInput(null)}
+                className={`bg-gray-100 px-4 py-4 text-gray-900 ${
+                  errors.prenoms
+                    ? 'border-red-500'
+                    : focusedInput === 'prenoms'
+                      ? 'border-green-500'
+                      : 'border-gray-300'
+                }`}
+                style={{
+                  borderRadius: 20,
+                  borderWidth: focusedInput === 'prenoms' ? 2 : 1,
+                }}
               />
+              {errors.prenoms && (
+                <View className="mt-1 flex-row items-start">
+                  <Ionicons name="alert-circle" size={16} color="#DC2626" style={{ marginTop: 1 }} />
+                  <Text className="ml-1 flex-1 text-sm text-red-500 leading-5">{errors.prenoms}</Text>
+                </View>
+              )}
             </View>
           </View>
         );
 
-      case 1:
+      case 2:
         return (
-          <View className="space-y-6">
+          <View style={{ gap: 20 }}>
+            {/* Email */}
             <View>
-              <Label className="mb-2 font-medium text-secondary-700">
-                Email <Text className="text-error-500">*</Text>
+              <Label className="mb-2 text-sm font-semibold text-gray-700">
+                Email
               </Label>
               <Input
                 value={formData.email}
@@ -342,45 +417,69 @@ export default function RegisterScreen() {
                 keyboardType="email-address"
                 autoCapitalize="none"
                 error={!!errors.email}
-                className={`rounded-xl border-secondary-200 bg-secondary-50 px-4 py-4 ${
-                  errors.email ? 'border-error-500' : 'focus:border-primary-500'
+                onFocus={() => setFocusedInput('email')}
+                onBlur={() => setFocusedInput(null)}
+                className={`bg-gray-100 px-4 py-4 text-gray-900 ${
+                  errors.email
+                    ? 'border-red-500'
+                    : focusedInput === 'email'
+                      ? 'border-green-500'
+                      : 'border-gray-300'
                 }`}
+                style={{
+                  borderRadius: 20,
+                  borderWidth: focusedInput === 'email' ? 2 : 1,
+                }}
               />
-              {errors.email && <Text className="mt-2 text-sm text-error-500">{errors.email}</Text>}
-              <Text className="mt-1 text-xs text-secondary-500">
-                L&apos;email est requis pour la vérification du compte
-              </Text>
+              {errors.email && (
+                <View className="mt-1 flex-row items-start">
+                  <Ionicons name="alert-circle" size={16} color="#DC2626" style={{ marginTop: 1 }} />
+                  <Text className="ml-1 flex-1 text-sm text-red-500 leading-5">{errors.email}</Text>
+                </View>
+              )}
             </View>
 
+            {/* Téléphone */}
             <View>
-              <Label className="mb-2 font-medium text-secondary-700">Téléphone (optionnel)</Label>
+              <Label className="mb-2 text-sm font-semibold text-gray-700">
+                Téléphone (optionnel)
+              </Label>
               <Input
                 value={formData.telephone}
                 onChangeText={(value) => updateFormData('telephone', value)}
-                placeholder="032 00 000 00"
+                placeholder="032XXXXXXXX"
                 keyboardType="phone-pad"
                 error={!!errors.telephone}
-                className={`rounded-xl border-secondary-200 bg-secondary-50 px-4 py-4 ${
-                  errors.telephone ? 'border-error-500' : 'focus:border-primary-500'
+                onFocus={() => setFocusedInput('telephone')}
+                onBlur={() => setFocusedInput(null)}
+                className={`bg-gray-100 px-4 py-4 text-gray-900 ${
+                  errors.telephone
+                    ? 'border-red-500'
+                    : focusedInput === 'telephone'
+                      ? 'border-green-500'
+                      : 'border-gray-300'
                 }`}
+                style={{
+                  borderRadius: 20,
+                  borderWidth: focusedInput === 'telephone' ? 2 : 1,
+                }}
               />
               {errors.telephone && (
-                <Text className="mt-2 text-sm text-error-500">{errors.telephone}</Text>
+                <View className="mt-1 flex-row items-start">
+                  <Ionicons name="alert-circle" size={16} color="#DC2626" style={{ marginTop: 1 }} />
+                  <Text className="ml-1 flex-1 text-sm text-red-500 leading-5">{errors.telephone}</Text>
+                </View>
               )}
-              <Text className="mt-1 text-xs text-secondary-500">
-                Formats acceptés: 032XXXXXXX, 033XXXXXXX, 034XXXXXXX, 038XXXXXXX
-              </Text>
             </View>
           </View>
         );
 
-      case 2:
+      case 3:
         return (
-          <View className="space-y-6">
+          <View style={{ gap: 20 }}>
+            {/* Mot de passe */}
             <View>
-              <Label className="mb-2 font-medium text-secondary-700">
-                Mot de passe <Text className="text-error-500">*</Text>
-              </Label>
+              <Label className="mb-2 text-sm font-semibold text-gray-700">Mot de passe</Label>
               <View className="relative">
                 <Input
                   value={formData.password}
@@ -388,42 +487,62 @@ export default function RegisterScreen() {
                   placeholder="••••••••"
                   secureTextEntry={!showPassword}
                   error={!!errors.password}
-                  className={`rounded-xl border-secondary-200 bg-secondary-50 px-4 py-4 pr-12 ${
-                    errors.password ? 'border-error-500' : 'focus:border-primary-500'
+                  onFocus={() => setFocusedInput('password')}
+                  onBlur={() => setFocusedInput(null)}
+                  className={`bg-gray-100 px-4 py-4 pr-12 text-gray-900 ${
+                    errors.password
+                      ? 'border-red-500'
+                      : focusedInput === 'password'
+                        ? 'border-green-500'
+                        : 'border-gray-300'
                   }`}
+                  style={{
+                    borderRadius: 20,
+                    borderWidth: focusedInput === 'password' ? 2 : 1,
+                  }}
                 />
                 <TouchableOpacity
                   onPress={() => setShowPassword(!showPassword)}
                   className="absolute right-4 top-4">
-                  <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#64748b" />
+                  <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#6b7280" />
                 </TouchableOpacity>
               </View>
               {errors.password && (
-                <Text className="mt-2 text-sm text-error-500">{errors.password}</Text>
+                <View className="mt-1 flex-row items-start">
+                  <Ionicons name="alert-circle" size={16} color="#DC2626" style={{ marginTop: 1 }} />
+                  <Text className="ml-1 flex-1 text-sm text-red-500 leading-5">{errors.password}</Text>
+                </View>
               )}
-
-              {/* Critères de sécurité */}
+              
+              {/* Critères du mot de passe */}
               {formData.password && (
-                <View className="mt-4 rounded-xl border border-secondary-200 bg-secondary-50 p-4">
-                  <Text className="mb-3 text-sm font-semibold text-secondary-700">
-                    Critères de sécurité :
-                  </Text>
-                  <CriteriaItem met={passwordCriteria.minLength} text="Au moins 8 caractères" />
-                  <CriteriaItem met={passwordCriteria.hasUppercase} text="Une lettre majuscule" />
-                  <CriteriaItem met={passwordCriteria.hasLowercase} text="Une lettre minuscule" />
-                  <CriteriaItem met={passwordCriteria.hasNumber} text="Un chiffre" />
-                  <CriteriaItem
-                    met={passwordCriteria.hasSpecialChar}
-                    text="Un caractère spécial (!@#$%^&*)"
-                  />
+                <View className="mt-2 space-y-1">
+                  <Text className="text-xs text-gray-600">Votre mot de passe doit contenir :</Text>
+                  {Object.entries({
+                    'Au moins 8 caractères': passwordCriteria.minLength,
+                    'Une majuscule': passwordCriteria.hasUppercase,
+                    'Une minuscule': passwordCriteria.hasLowercase,
+                    'Un chiffre': passwordCriteria.hasNumber,
+                    'Un caractère spécial': passwordCriteria.hasSpecialChar,
+                  }).map(([label, isValid]) => (
+                    <View key={label} className="flex-row items-center">
+                      <Ionicons 
+                        name={isValid ? 'checkmark-circle' : 'close-circle'} 
+                        size={12} 
+                        color={isValid ? '#059669' : '#DC2626'} 
+                      />
+                      <Text className={`ml-1 text-xs ${isValid ? 'text-green-600' : 'text-red-500'}`}>
+                        {label}
+                      </Text>
+                    </View>
+                  ))}
                 </View>
               )}
             </View>
 
+            {/* Confirmer mot de passe */}
             <View>
-              <Label className="mb-2 font-medium text-secondary-700">
-                Confirmer mot de passe <Text className="text-error-500">*</Text>
-              </Label>
+              <Label className="mb-2 text-sm font-semibold text-gray-700">Confirmer mot de passe</Label>
               <View className="relative">
                 <Input
                   value={formData.confirmPassword}
@@ -431,9 +550,19 @@ export default function RegisterScreen() {
                   placeholder="••••••••"
                   secureTextEntry={!showConfirmPassword}
                   error={!!errors.confirmPassword}
-                  className={`rounded-xl border-secondary-200 bg-secondary-50 px-4 py-4 pr-12 ${
-                    errors.confirmPassword ? 'border-error-500' : 'focus:border-primary-500'
+                  onFocus={() => setFocusedInput('confirmPassword')}
+                  onBlur={() => setFocusedInput(null)}
+                  className={`bg-gray-100 px-4 py-4 pr-12 text-gray-900 ${
+                    errors.confirmPassword
+                      ? 'border-red-500'
+                      : focusedInput === 'confirmPassword'
+                        ? 'border-green-500'
+                        : 'border-gray-300'
                   }`}
+                  style={{
+                    borderRadius: 20,
+                    borderWidth: focusedInput === 'confirmPassword' ? 2 : 1,
+                  }}
                 />
                 <TouchableOpacity
                   onPress={() => setShowConfirmPassword(!showConfirmPassword)}
@@ -441,31 +570,16 @@ export default function RegisterScreen() {
                   <Ionicons
                     name={showConfirmPassword ? 'eye-off' : 'eye'}
                     size={20}
-                    color="#64748b"
+                    color="#6b7280"
                   />
                 </TouchableOpacity>
               </View>
               {errors.confirmPassword && (
-                <Text className="mt-2 text-sm text-error-500">{errors.confirmPassword}</Text>
+                <View className="mt-1 flex-row items-start">
+                  <Ionicons name="alert-circle" size={16} color="#DC2626" style={{ marginTop: 1 }} />
+                  <Text className="ml-1 flex-1 text-sm text-red-500 leading-5">{errors.confirmPassword}</Text>
+                </View>
               )}
-            </View>
-
-            <View className="rounded-xl border border-primary-200 bg-primary-50 p-4">
-              <Label className="mb-3 font-medium text-primary-800">
-                Pourquoi rejoindre Maintso Vola ?
-              </Label>
-              <View className="space-y-3">
-                <Checkbox
-                  checked={formData.isInvestor}
-                  onPress={() => updateFormData('isInvestor', !formData.isInvestor)}
-                  label="Je souhaite investir dans l'agriculture"
-                />
-                <Checkbox
-                  checked={formData.isFarmingOwner}
-                  onPress={() => updateFormData('isFarmingOwner', !formData.isFarmingOwner)}
-                  label="Je cherche des investisseurs pour mon projet agricole"
-                />
-              </View>
             </View>
           </View>
         );
@@ -476,7 +590,23 @@ export default function RegisterScreen() {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-green-50">
+    <SafeAreaView className="flex-1 bg-white">
+      {/* Background Decorative Elements - Identique au login */}
+      <View className="absolute inset-0">
+        <View className="absolute -right-16 -top-16 h-32 w-32 rounded-full bg-green-100 opacity-30" />
+        <View className="absolute -right-8 -top-8 h-16 w-16 rounded-full bg-green-200 opacity-40" />
+        <View className="absolute -top-4 right-4 h-12 w-12 bg-green-300 opacity-25" />
+        <View className="absolute right-12 top-8 h-8 w-8 rotate-45 rounded bg-green-400 opacity-35" />
+        <View className="absolute -right-4 top-12 h-20 w-6 rotate-12 rounded-lg bg-green-200 opacity-30" />
+        <View className="absolute right-8 top-20 h-6 w-6 rounded-full bg-green-500 opacity-20" />
+        <View className="absolute -left-8 top-1/3 h-24 w-16 rotate-12 rounded-lg bg-green-200 opacity-20" />
+        <View className="absolute right-8 top-1/2 h-12 w-12 rounded-full bg-green-300 opacity-25" />
+        <View className="absolute bottom-32 left-4 h-20 w-20 rotate-45 rounded-lg bg-green-100 opacity-30" />
+        <View className="absolute -bottom-8 -right-4 h-40 w-24 rotate-45 rounded-2xl bg-green-200 opacity-20" />
+        <View className="absolute left-1/3 top-20 h-8 w-8 rounded-full bg-green-400 opacity-15" />
+        <View className="absolute bottom-1/4 right-1/4 h-16 w-6 rotate-12 rounded bg-green-300 opacity-20" />
+      </View>
+
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         className="flex-1">
@@ -484,88 +614,81 @@ export default function RegisterScreen() {
           contentContainerStyle={{ flexGrow: 1 }}
           keyboardShouldPersistTaps="handled"
           showsVerticalScrollIndicator={false}>
-          <View className="flex-1 px-6 py-8">
+          
+          <Animated.View 
+            className="relative z-10 flex-1 px-6 pt-8"
+            style={{
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            }}>
+            
+            {/* Back Button */}
+            <TouchableOpacity 
+              onPress={currentStep === 1 ? () => router.back() : handlePrevious} 
+              className="mb-8 w-10">
+              <Ionicons name="arrow-back" size={24} color="#374151" />
+            </TouchableOpacity>
+
+
+
             {/* Header */}
             <View className="mb-8 items-center">
-              <View className="mb-4">
-                <Logo size="lg" />
+              <View className="mb-4 flex-row items-center">
+                <Text className="ml-3 text-3xl font-bold text-gray-900">{getStepTitle()}</Text>
               </View>
-              <Text className="mb-2 text-2xl font-bold text-gray-900">Créer votre compte</Text>
-              <Text className="text-center text-gray-600">
-                Rejoignez la communauté Mamboly Harena
-              </Text>
+              <Text className="text-center text-gray-600">{getStepSubtitle()}</Text>
             </View>
 
-            {/* Formulaire */}
-            <View className="rounded-3xl border border-white bg-white p-6 shadow-lg">
-              <ProgressIndicator />
-
-              {/* En-tête de l'étape */}
-              <View className="mb-8 items-center">
-                <View className="mb-4 h-16 w-16 items-center justify-center rounded-2xl bg-green-100">
-                  <Ionicons name={STEPS[currentStep].icon} size={32} color="#16a34a" />
-                </View>
-                <Text className="mb-2 text-xl font-bold text-gray-900">
-                  {STEPS[currentStep].title}
-                </Text>
-                <Text className="text-center text-sm text-gray-600">
-                  {STEPS[currentStep].description}
-                </Text>
-              </View>
-
+            {/* Form Content */}
+            <Animated.View
+              style={{
+                opacity: stepTransitionAnim.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: [1, 0.7],
+                }),
+              }}>
               {renderStep()}
+            </Animated.View>
 
-              {/* Boutons de navigation */}
-              <View className="mt-8">
-                <View className="flex-row" style={{ gap: 16 }}>
-                  {currentStep > 0 && (
-                    <TouchableOpacity
-                      onPress={handlePrevious}
-                      className="flex-1 items-center rounded-xl border border-gray-200 bg-gray-100 py-4">
-                      <Text className="font-semibold text-gray-700">Précédent</Text>
-                    </TouchableOpacity>
-                  )}
+            {/* Navigation Buttons */}
+            <View className="mt-8">
+              {currentStep < totalSteps ? (
+                <Animated.View style={{ transform: [{ scale: buttonScaleAnim }] }}>
+                  <Button
+                    onPress={handleNext}
+                    className="py-5 shadow-lg bg-green-600"
+                    style={{ borderRadius: 25 }}>
+                    <Text className="text-center text-lg font-medium text-white">
+                      Continuer
+                    </Text>
+                  </Button>
+                </Animated.View>
+              ) : (
+                <Animated.View style={{ transform: [{ scale: buttonScaleAnim }] }}>
+                  <Button
+                    onPress={handleSubmit}
+                    loading={isSubmitting}
+                    disabled={isSubmitting}
+                    className={`py-5 shadow-lg ${isSubmitting ? 'bg-green-400' : 'bg-green-600'}`}
+                    style={{ borderRadius: 25 }}>
+                    <Text className="text-center text-lg font-medium text-white">
+                      {isSubmitting ? 'Inscription...' : 'Créer un compte'}
+                    </Text>
+                  </Button>
+                </Animated.View>
+              )}
 
-                  <View className="flex-1">
-                    {currentStep < STEPS.length - 1 ? (
-                      <TouchableOpacity
-                        onPress={handleNext}
-                        className="items-center rounded-xl bg-primary-600 py-4">
-                        <Text className="text-lg font-semibold text-white">Suivant</Text>
-                      </TouchableOpacity>
-                    ) : (
-                      <TouchableOpacity
-                        onPress={handleSubmit}
-                        disabled={
-                          isSubmitting ||
-                          (!!formData.password && !isPasswordRobust(passwordCriteria))
-                        }
-                        className={`items-center rounded-xl py-4 ${
-                          isSubmitting ||
-                          (!!formData.password && !isPasswordRobust(passwordCriteria))
-                            ? 'bg-gray-300'
-                            : 'bg-primary-600'
-                        }`}>
-                        <Text className="text-lg font-semibold text-white">
-                          {isSubmitting ? 'Inscription en cours...' : "S'inscrire"}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                </View>
+              {/* Login Link */}
+              <View className="mt-8 items-center">
+                <Text className="text-center text-gray-600">
+                  Déjà un compte ?{' '}
+                  <Link href="/(auth)/login" className="font-semibold text-green-600">
+                    Se connecter
+                  </Link>
+                </Text>
               </View>
             </View>
-
-            {/* Lien vers connexion */}
-            <View className="mt-6 items-center">
-              <Text className="text-center text-gray-600">
-                Déjà un compte ?{' '}
-                <Link href="/(auth)/login" className="font-semibold text-green-600">
-                  Se connecter
-                </Link>
-              </Text>
-            </View>
-          </View>
+          </Animated.View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
