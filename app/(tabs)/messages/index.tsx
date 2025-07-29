@@ -7,6 +7,7 @@ export default function MessagesScreen() {
     <View className="flex-1">
       {/* <MessageList /> */}
       <MessageList />
+
     </View>
   );
 }

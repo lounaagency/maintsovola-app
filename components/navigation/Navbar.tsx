@@ -120,6 +120,7 @@ const Navbar: React.FC<NavbarProps> = ({ activeNavIcon = "home", onNavChange }) 
         router.push("/messages")
         break
       case "profile":
+
         setShowProfile(true)
         break
       default:
