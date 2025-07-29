@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -86,7 +87,7 @@ type StatusSelectProps = {
 const StatusSelect = ({ selected, setSelected }: StatusSelectProps) => {
   const styles = StyleSheet.create({
     scroll: { paddingHorizontal: 10 },
-    text: { fontSize: 14, color: '#000' },
+    text: { fontSize: 16, color: '#000' },
     selected: { color: '#009900', fontWeight: 'bold' },
   });
 
@@ -103,7 +104,7 @@ const StatusSelect = ({ selected, setSelected }: StatusSelectProps) => {
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scroll}>
       {filters.map(({ key, label }) => (
         <TouchableOpacity key={key} onPress={() => setSelected(key)} className="mx-2">
-          <Text style={[styles.text, selected === key && styles.selected]}>{label}</Text>
+          <Text style={[styles.text, selected === key && styles.selected]} className='mb-2'>{label}</Text>
         </TouchableOpacity>
       ))}
     </ScrollView>
@@ -117,7 +118,7 @@ export default function Project({isPass = false}: {isPass: boolean}) {
   }
 
   const [isSearchFocus, setIsSearchFocus] = useState(false);
-  const { projects, loading } = useProjects();
+  const { projects, loading, refetch } = useProjects();
   const [selected, setSelected] = useState('all');
   const [isVisibleAdd, setisVisibleAdd] = useState<boolean>(false)
 
@@ -126,18 +127,26 @@ export default function Project({isPass = false}: {isPass: boolean}) {
   const userProfile = profile?.nom_role?.toLocaleLowerCase() || 'simple';
   const userName = `${profile?.nom} ${profile?.prenoms}`;
 
-  // useEffect(() => {
-  //   if (!user || !profile) {
-  //     router.replace("/(auth)/login");
-  //   }
-  // })
+  useEffect(() => {
+    if (!user) {
+      router.replace("/(auth)/login");
+    }
+  })
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();           // ta fonction de reload
+    setRefreshing(false);
+  };
 
   // console.log(projects);
 
   return (
     <ScrollView className="px-5">
       <View className="mt-4">
-        <Text className="text-4xl font-extrabold">Projects</Text>
+        <Text className="text-4xl font-extrabold">Projets</Text>
         <Text className="text-xl text-gray-500">Gérez vos projets agricole ici</Text>
       </View>
 
@@ -185,7 +194,18 @@ export default function Project({isPass = false}: {isPass: boolean}) {
         renderItem={({ item }) => <ListTerrain item={item} selected={selected} />}
         scrollEnabled={false}
         className="my-5 rounded-xl border border-gray-300 p-3"
-      />
+        onRefresh={onRefresh}
+        refreshing={refreshing}
+
+        refreshControl={
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          colors={['#009800']} // Android
+          tintColor="#009800"  // iOS
+        />
+      }
+          />
     </ScrollView>
   );
 }

@@ -21,7 +21,7 @@ export function Checkbox({ checked, onPress, label, disabled = false }: Checkbox
         } ${disabled ? 'opacity-50' : ''}`}>
         {checked && <Ionicons name="checkmark" size={12} color="white" />}
       </View>
-      <Text className={`flex-1 text-sm ${disabled ? 'text-gray-400' : 'text-gray-700'}`}>
+      <Text className={`flex-1 text-sm ml-2 ${disabled ? 'text-gray-400' : 'text-gray-700'}`}>
         {label}
       </Text>
     </TouchableOpacity>
