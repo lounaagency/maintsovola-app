@@ -4,7 +4,7 @@ import MessageList from '~/components/messenger/MessageList';
 // import MessengerScreen from '~/components/messenger/Messenger';
 import { useAuth } from '~/contexts/AuthContext';
 //import Messages from '~/components/Messages';
-//import MessengerScreen from '~/components/MessengerScreen';
+import MessengerScreen from '~/components/MessengerScreen';
 
 export default function MessageScreen() {
 
@@ -15,7 +15,7 @@ export default function MessageScreen() {
       {/* <Messages /> */}
       {/* <MessengerScreen /> */}
       <MessageList currentUserId={ user?.id || ''} />
-      //<MessengerScreen />
+      {/* <MessengerScreen /> */}
     </View>
   );
 }
