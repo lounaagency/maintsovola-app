@@ -1,10 +1,12 @@
 import { Stack } from 'expo-router';
 import { useState, useEffect } from 'react';
-import { StyleSheet, View, Text, ActivityIndicator } from 'react-native';
-import ProjectsSummary, { ProjectsSummaryProps } from '~/components/ProjectsSummary';
+import { View, Text, ActivityIndicator } from 'react-native';
+import ProjectsSummary from '~/components/ProjectsSummary';
+import { ProjectsSummaryProps } from '~/types/projet'
 import { useTotalSurfaceForTantsaha } from '~/hooks/useTotalSurfaceForTantsaha';
 import { useTotalProjectNumberForTantsaha } from '~/hooks/useTotalProjectNumberForTantsaha'; // Assumed to return 'count'
 import { useTotalFundingForTantsaha } from '~/hooks/useTotalFundingForTantsaha';
+import { useAuth } from '~/contexts/AuthContext';
 
 const defaultProjectsSummaryData: ProjectsSummaryProps = {
   totalProjects: 0,
@@ -21,70 +23,56 @@ const defaultProjectsSummaryData: ProjectsSummaryProps = {
 };
 
 const Projets = () => {
-  const currentTantsahaId = '28ff57b7-fb92-4593-b239-5c56b0f44560';
-
-  // Hook 1: Total Surface Area
+  const { user } = useAuth();
+  const currentTantsahaId: string | null = user?.id ?? null;
   const { totalSurface, loading: loadingSurface, error: errorSurface } = useTotalSurfaceForTantsaha(currentTantsahaId);
-
-  // Hook 2: Total Project Number
-  // FIX: Destructure 'count' and alias it to 'totalProjectCount' for consistency
   const { totalProject: totalProjectCount, loading: loadingProjectCount, error: errorProjectCount } = useTotalProjectNumberForTantsaha(currentTantsahaId);
-
-  // Hook 3: Total Funding
   const { totalFunding, loading: loadingFunding, error: errorFunding } = useTotalFundingForTantsaha(currentTantsahaId);
-
   const [summaryData, setSummaryData] = useState<ProjectsSummaryProps>(defaultProjectsSummaryData);
-
-  // Combine ALL loading states
   const isLoading = loadingSurface || loadingProjectCount || loadingFunding;
-
-  // Combine ALL error states
   const hasError = errorSurface || errorProjectCount || errorFunding;
 
-  // useEffect to update summaryData once all pieces of data are loaded
   useEffect(() => {
-    // Only update if all hooks have finished loading AND their data is not null
-    // AND there are no errors from any hook
     if (
-      !isLoading && // Use combined isLoading for conciseness
-      !hasError &&   // Only update summaryData if there are no errors
+      !isLoading && 
+      !hasError && 
       totalSurface !== null &&
-      totalProjectCount !== null && // Use totalProjectCount
+      totalProjectCount !== null && 
       totalFunding !== null
     ) {
       setSummaryData(prevData => ({
         ...prevData,
         totalArea: totalSurface,
-        totalProjects: totalProjectCount, // FIX: Use totalProjectCount
+        totalProjects: totalProjectCount, 
         totalFunding: totalFunding,
       }));
     }
   }, [
-    totalSurface, totalProjectCount, totalFunding, // Data values
-    isLoading, // Combined loading state
-    hasError // Combined error state (optional, but good for robust reactivity)
+    totalSurface, totalProjectCount, totalFunding, 
+    isLoading, 
+    hasError
   ]);
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#0000ff" />
-        <Text>Loading project summary...</Text>
-      </View>
+      <View className="flex-1 justify-center items-center">
+      <ActivityIndicator size="large" color="#0000ff" />
+      <Text>Loading project summary...</Text>
+    </View>
     );
   }
-
-  if (hasError) {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>Error loading data:</Text>
-        {errorSurface && <Text style={styles.errorText}>- Surface data: {errorSurface}</Text>}
-        {errorProjectCount && <Text style={styles.errorText}>- Project count data: {errorProjectCount}</Text>}
-        {errorFunding && <Text style={styles.errorText}>- Funding data: {errorFunding}</Text>}
-        <Text style={styles.errorText}>Please try again later.</Text>
-      </View>
-    );
-  }
+  console.log(summaryData)
+ if (hasError) {
+  return (
+    <View className="flex-1 justify-center items-center p-5">
+      <Text className="text-red-500 text-base text-center mb-2">Error loading data:</Text>
+      {errorSurface && <Text className="text-red-500 text-base text-center mb-2">- Surface data: {errorSurface}</Text>}
+      {errorProjectCount && <Text className="text-red-500 text-base text-center mb-2">- Project count data: {errorProjectCount}</Text>}
+      {errorFunding && <Text className="text-red-500 text-base text-center mb-2">- Funding data: {errorFunding}</Text>}
+      <Text className="text-red-500 text-base text-center mb-2">Please try again later.</Text>
+    </View>
+  );
+}
   
   return (
     <>
@@ -96,27 +84,3 @@ const Projets = () => {
   );
 }
 export default Projets;
-
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  errorText: {
-    color: 'red',
-    fontSize: 16,
-    textAlign: 'center',
-    marginBottom: 10,
-  },
-  container: {
-    flex: 1,
-    padding: 24,
-  },
-});
