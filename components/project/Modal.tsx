@@ -35,9 +35,16 @@ export const ModalDetails = ({ projectId, isVisible, onClose, userProfile }: Mod
               <Text className="font-semibold text-xl">Agriculteur :</Text>
               <View className="mt-2 flex-row items-center justify-between">
                 <Text>{projects?.tantsaha?.nom} {projects?.tantsaha?.prenoms}</Text>
-                {projects?.tantsaha?.photo_profil && (
+                {projects?.tantsaha?.photo_profil ? (
                   <Image
                     source={{ uri: projects.tantsaha.photo_profil }}
+                    width={50}
+                    height={50}
+                    className="rounded-full"
+                  />
+                ):(
+                  <Image
+                    source={{uri: "/assets/anonymous.png"}}
                     width={50}
                     height={50}
                     className="rounded-full"
