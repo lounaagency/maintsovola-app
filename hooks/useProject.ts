@@ -1,4 +1,3 @@
-// hooks/useProjects.ts
 import { useEffect, useState } from 'react';
 import { supabase } from '@/utils/supabase';
 import type { ProjectData, ProjectDataDetails } from '@/type/projectInterface';

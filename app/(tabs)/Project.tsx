@@ -1,6 +1,6 @@
 // Project.tsx
 import { Plus, SearchIcon} from 'lucide-react-native';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   FlatList,
@@ -14,6 +14,8 @@ import {
 import { useProjects } from '@/hooks/useProject';
 import type { ProjectData } from '@/type/projectInterface';
 import { ModalAddStyled, ModalDetails } from '@/components/project/Modal';
+import { useAuth } from '@/contexts/AuthContext';
+import { router } from 'expo-router';
 
 const colorCode = {
     "en attente": "#cbe043",
@@ -38,6 +40,8 @@ const ListTerrain = ({ item, selected }: ListTerrainProps) => {
         return item.statut === 'en cours';
       case 'termine':
         return item.statut === 'terminé';
+      case 'valide':
+        return item.statut === 'validé';
       default:
         return true;
     }
@@ -92,6 +96,7 @@ const StatusSelect = ({ selected, setSelected }: StatusSelectProps) => {
     { key: 'finance', label: 'En financement' },
     { key: 'en_prod', label: 'En production' },
     { key: 'termine', label: 'Terminés' },
+    {key: 'valide', label: 'Validés'}
   ];
 
   return (
@@ -106,11 +111,28 @@ const StatusSelect = ({ selected, setSelected }: StatusSelectProps) => {
 };
 
 /* ---------- Écran principal ---------- */
-export default function Project() {
+export default function Project({isPass = false}: {isPass: boolean}) {
+  if (!isPass) {
+    router.replace("/projet")
+  }
+
   const [isSearchFocus, setIsSearchFocus] = useState(false);
   const { projects, loading } = useProjects();
   const [selected, setSelected] = useState('all');
   const [isVisibleAdd, setisVisibleAdd] = useState<boolean>(false)
+
+  // Auth context
+  const {user, profile} = useAuth();
+  const userProfile = profile?.nom_role?.toLocaleLowerCase() || 'simple';
+  const userName = `${profile?.nom} ${profile?.prenoms}`;
+
+  // useEffect(() => {
+  //   if (!user || !profile) {
+  //     router.replace("/(auth)/login");
+  //   }
+  // })
+
+  // console.log(projects);
 
   return (
     <ScrollView className="px-5">
@@ -146,6 +168,7 @@ export default function Project() {
           project={projects[0]}
           isVisible={isVisibleAdd}
           onClose={() => setisVisibleAdd(false)}
+          userProfile={{userProfile, userName}}
         />
         
       </View>
