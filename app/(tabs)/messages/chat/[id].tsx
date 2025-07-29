@@ -1,8 +1,9 @@
 import React from 'react';
 import { View, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import ChatScreen from '~/components/messenger/ChatScreen';
-import { staticConversations } from '../../../../types/message_types';
+
+import ChatScreen from '~/components/messaging/ChatScreen';
+import { staticConversations } from '~/components/messaging/message_types';
 import { useAuth } from '~/contexts/AuthContext';
 
 export default function ChatPage() {
@@ -11,7 +12,9 @@ export default function ChatPage() {
   
   // Trouver la conversation correspondante
   const conversation = staticConversations.find(conv => conv.id === id);
+
   const user = useAuth().user;
+
   if (!conversation) {
     return (
       <View className="flex-1 justify-center items-center">
@@ -22,7 +25,8 @@ export default function ChatPage() {
 
   return (
     <View className="flex-1">
-      <ChatScreen conversation={conversation} currentUserId={user?.id || ''} />
+      <ChatScreen conversation={conversation} />
     </View>
   );
 }
+

@@ -1,4 +1,5 @@
 import { Slot } from 'expo-router';
+
 import { View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
@@ -11,11 +12,13 @@ export default function TabsLayout() {
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} edges={['top', 'bottom']}>
-      <View style={{ flex: 1 }}>
+
+        <View style={{ flex: 1 }}>
         <Header />
         <Navbar activeNavIcon={activeNavIcon} onNavChange={setActiveNavIcon} />
-        <Slot />
-      </View>
+          <Slot />
+        </View>
+
     </SafeAreaView>
   );
 }
