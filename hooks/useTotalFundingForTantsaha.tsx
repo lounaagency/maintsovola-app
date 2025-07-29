@@ -34,7 +34,7 @@ export const useTotalFundingForTantsaha = (tantsahaId: string | null): UseTotalF
     const fetchFundingData = async () => {
       setLoading(true);
       setError(null);
-      console.log("Starting fetching investments!")
+      // console.log("Starting fetching investments!")
       try {
         const { data: investissements, error: supabaseError } = await (
           supabase
@@ -50,7 +50,8 @@ export const useTotalFundingForTantsaha = (tantsahaId: string | null): UseTotalF
             .eq('projet.id_tantsaha', tantsahaId)
         ) as { data: FetchedInvestissementWithProjet[] | null, error: any };
 
-        // console.log("Fetched investissements:", investissements)
+        console.log("Fetched investissements:", investissements)
+
         if (supabaseError) {
           console.error('Supabase Error fetching investissement data:', supabaseError.message);
           setError(supabaseError.message);
