@@ -90,15 +90,15 @@ export default function ForgotPasswordScreen() {
           <View className="flex-1 justify-center px-6 py-12">
             {/* Header avec bouton retour */}
             <View className="mb-8 flex-row items-center">
-              <TouchableOpacity onPress={() => router.back()} className="-ml-2 mr-4 p-2">
+              <TouchableOpacity onPress={() => router.back()} className="mr-4 p-2">
                 <Ionicons name="arrow-back" size={24} color="#374151" />
               </TouchableOpacity>
-              <View className="-mr-10 flex-1 items-center">
+              <View className="mr-6 flex-1 items-center">
                 <Logo size="lg" />
               </View>
             </View>
 
-            <View className="rounded-lg border border-gray-200 bg-white p-6 shadow-sm">
+            <View className="rounded-lg border border-gray-200 bg-white p-6">
               <Text className="mb-2 text-center text-2xl font-bold text-gray-900">
                 Mot de passe oublié
               </Text>
@@ -107,7 +107,7 @@ export default function ForgotPasswordScreen() {
                 Saisissez votre adresse email pour recevoir un code de réinitialisation
               </Text>
 
-              <View className="flex gap-6">
+              <View style={{ gap: 24 }}>
                 <View>
                   <Label>
                     Adresse email <Text className="text-red-500">*</Text>
@@ -129,7 +129,7 @@ export default function ForgotPasswordScreen() {
                   {isSubmitting ? 'Envoi en cours...' : 'Envoyer le code'}
                 </Button>
 
-                <View className="pt-4 text-center">
+                <View className="items-center pt-4">
                   <Text className="text-sm text-gray-600">
                     Vous vous souvenez de votre mot de passe ?{' '}
                     <Link href="/(auth)/login" className="font-medium text-green-600">
