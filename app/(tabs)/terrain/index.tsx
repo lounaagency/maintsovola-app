@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
 import SubNavTabs from 'components/SubNavTabs';
@@ -8,7 +8,7 @@ import { supabase } from 'integrations/supabase/client';
 import { TerrainData } from '../../../types/Terrain';
 import { useToast } from '../../../components/ui/terrain/use-toast';
 import TerrainTable from '../../../components/terrain/TerrainTable';
-// import TerrainEditDialog from '../../../components/TerrainEditDialog';
+import TerrainEditDialog from '../../../components/terrain/TerrainEditDialog';
 
 // import TerrainCard from 'components/terrain/TerrainCard';
 
@@ -179,8 +179,16 @@ export default function TerrainScreen() {
     }
   }, []);
 
-  const [activeTab, setActiveTab] = useState('À assigner');
-  const tabs = ['À assigner', 'À valider', 'Validés'];
+  const [activeTab, setActiveTab] = useState(() => {
+    if (userRole === 'superviseur') {
+      return 'À assigner';
+    } else {
+      return 'En attente';
+    }
+  });
+  const tabs = userRole === 'superviseur' 
+    ? ['À assigner', 'À valider', 'Validés']
+    : ['En attente', 'Validés'];
 
   useEffect(() => {
     if (user) {
@@ -251,6 +259,7 @@ export default function TerrainScreen() {
     setIsTerrainCardOpen(true);
   };
   const handleValidateTerrain = (terrain: TerrainData) => {
+    console.log('Validate terrain:', terrain);
     setSelectedTerrain(terrain);
     setIsTerrainValidateOpen(true);
   };
@@ -287,7 +296,6 @@ export default function TerrainScreen() {
                 techniciens={techniciens}
                 onEdit={handleEditTerrain}
                 onViewDetails={handleViewTerrainDetails}
-                onValidate={handleValidateTerrain}
                 onDelete={handleDeleteTerrain}
               />
             </ScrollView>
@@ -322,44 +330,80 @@ export default function TerrainScreen() {
         </View>
       ) : userRole === 'technicien' ? (
         <View>
-          {/* <Text style={styles.littleDescription}>Terrains en attente de validation</Text>
-          <ScrollView horizontal={true} style={styles.viewContainer}>
-            <TerrainTable
-              terrains={pendingTerrains.filter((t) => t.id_technicien === user.id)}
-              type="pending"
-              userRole={userRole}
-              onTerrainUpdate={handleTerrainUpdate}
-              onEdit={handleEditTerrain}
-              onViewDetails={handleViewTerrainDetails}
-              onValidate={handleValidateTerrain}
-              onDelete={handleDeleteTerrain}
-            />
-          </ScrollView> */}
+          <SubNavTabs tabs={['En attente', 'Validés']} activeTab={activeTab} onChange={setActiveTab} />
+          {activeTab === 'En attente' && (
+            <ScrollView horizontal={true} style={styles.viewContainer}>
+              <TerrainTable
+                terrains={pendingTerrains.filter((t) => t.id_technicien === user?.id)}
+                type="pending"
+                userRole={userRole}
+                onTerrainUpdate={handleTerrainUpdate}
+                onEdit={handleEditTerrain}
+                onViewDetails={handleViewTerrainDetails}
+                onValidate={handleValidateTerrain}
+                onDelete={handleDeleteTerrain}
+              />
+            </ScrollView>
+          )}
+          {activeTab === 'Validés' && (
+            <ScrollView horizontal={true} style={styles.viewContainer}>
+              <TerrainTable
+                terrains={validatedTerrains.filter((t) => t.id_technicien === user?.id)}
+                type="validated"
+                userRole={userRole}
+                onTerrainUpdate={handleTerrainUpdate}
+                onEdit={handleEditTerrain}
+                onViewDetails={handleViewTerrainDetails}
+                onDelete={handleDeleteTerrain}
+              />
+            </ScrollView>
+          )}
         </View>
       ) : (
         <View>
-          <Text>ICI un technicien</Text>
+          <SubNavTabs tabs={['En attente', 'Validés']} activeTab={activeTab} onChange={setActiveTab} />
+          {activeTab === 'En attente' && (
+            <ScrollView horizontal={true} style={styles.viewContainer}>
+              <TerrainTable
+                terrains={pendingTerrains}
+                type="pending"
+                userRole={userRole}
+                onTerrainUpdate={handleTerrainUpdate}
+                onEdit={handleEditTerrain}
+                onViewDetails={handleViewTerrainDetails}
+                onDelete={handleDeleteTerrain}
+              />
+            </ScrollView>
+          )}
+          {activeTab === 'Validés' && (
+            <ScrollView horizontal={true} style={styles.viewContainer}>
+              <TerrainTable
+                terrains={validatedTerrains}
+                type="validated"
+                userRole={userRole}
+                onTerrainUpdate={handleTerrainUpdate}
+                onEdit={handleEditTerrain}
+                onViewDetails={handleViewTerrainDetails}
+                onDelete={handleDeleteTerrain}
+              />
+            </ScrollView>
+          )}
         </View>
       )}
-      {/* {isTerrainCardOpen && selectedTerrain && (
-        <TerrainCard
-          isOpen={isTerrainCardOpen}
-          onClose={() => setIsTerrainCardOpen(false)}
-          terrain={selectedTerrain}
-          onTerrainUpdate={handleTerrainUpdate}
-        />
-      )} */}
-      {/* {isTerrainDialogOpen && (
+      {isTerrainValidateOpen && selectedTerrain && 
         <TerrainEditDialog
-          isOpen={isTerrainDialogOpen}
-          onClose={() => setIsTerrainDialogOpen(false)}
-          terrain={selectedTerrain || undefined}
+          isOpen={isTerrainValidateOpen}
+          onClose={() => setIsTerrainValidateOpen(false)}
+          terrain={{
+            ...selectedTerrain,
+            id_tantsaha: selectedTerrain.id_tantsaha ?? undefined
+          }}
           onSubmitSuccess={handleTerrainSaved}
-          userId={user.id}
+          userId={user?.id ?? ''}
           userRole={userRole}
+          isValidationMode={true}
           agriculteurs={agriculteurs}
-        />
-      )} */}
+      />}
     </View>
   );
 }

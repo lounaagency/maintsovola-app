@@ -35,6 +35,7 @@ export function Button({
   const mergedTextStyle = [
     styles.text, 
     variant === 'link' && styles.linkText,
+    variant === 'outline' && styles.outlineText,
     textStyle, // Style de texte personnalisé ajouté
   ];
 
@@ -113,6 +114,9 @@ const styles = StyleSheet.create({
   linkText: {
     color: '#3b82f6',
     textDecorationLine: 'underline',
+  },
+  outlineText: {
+    color: '#374151',
   },
   iconContainer: {
     alignItems: 'center',

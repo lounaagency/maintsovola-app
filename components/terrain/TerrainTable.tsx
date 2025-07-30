@@ -214,6 +214,14 @@ const TerrainTable: React.FC<TerrainTableProps> = ({
                 title={<MaterialCommunityIcons name="trash-can-outline" size={20} />}
               />
             )}
+            {onValidate && (userRole === 'superviseur' || userRole === 'technicien') && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onPress={() => onValidate(item)}
+                  title={<MaterialCommunityIcons name="check-circle-outline" size={20} />}
+                />
+              )}
           </View>
         </View>
       </TouchableOpacity>
