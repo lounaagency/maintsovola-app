@@ -8,6 +8,7 @@ import { supabase } from 'integrations/supabase/client';
 import { TerrainData } from '../../../types/Terrain';
 import { useToast } from '../../../components/ui/terrain/use-toast';
 import TerrainTable from '../../../components/terrain/TerrainTable';
+import TerrainCard from '~/components/terrain/TerrainCard';
 import TerrainEditDialog from '../../../components/terrain/TerrainEditDialog';
 
 // import TerrainCard from 'components/terrain/TerrainCard';
@@ -390,7 +391,15 @@ export default function TerrainScreen() {
           )}
         </View>
       )}
-      {isTerrainValidateOpen && selectedTerrain && 
+      {/* {isTerrainCardOpen && selectedTerrain && (
+        <TerrainCard
+          isOpen={isTerrainCardOpen}
+          onClose={() => setIsTerrainCardOpen(false)}
+          terrain={selectedTerrain}
+          onTerrainUpdate={handleTerrainUpdate}
+        />
+      )} */}
+      {/* {isTerrainDialogOpen && (
         <TerrainEditDialog
           isOpen={isTerrainValidateOpen}
           onClose={() => setIsTerrainValidateOpen(false)}
@@ -403,7 +412,9 @@ export default function TerrainScreen() {
           userRole={userRole}
           isValidationMode={true}
           agriculteurs={agriculteurs}
-      />}
+        />
+      )} */}
+       {isTerrainCardOpen && selectedTerrain && <TerrainCard isOpen={isTerrainCardOpen} onClose={() => setIsTerrainCardOpen(false)} terrain={selectedTerrain} onTerrainUpdate={handleTerrainUpdate} />}
     </View>
   );
 }

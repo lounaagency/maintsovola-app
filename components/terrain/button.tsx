@@ -7,12 +7,12 @@ type Size = 'default' | 'sm' | 'lg' | 'icon';
 interface ButtonProps {
   variant?: Variant;
   size?: Size;
-  title?: string | React.ReactNode; // Accepte maintenant string ou ReactNode
-  icon?: React.ReactNode; // Nouvelle prop pour icône
+  title?: string | React.ReactNode;
+  icon?: React.ReactNode;
   onPress?: () => void;
   disabled?: boolean;
-  style?: ViewStyle; // Permet de surcharger le style
-  textStyle?: TextStyle; // Permet de surcharger le style du texte
+  style?: ViewStyle;
+  textStyle?: TextStyle;
 }
 
 export function Button({
@@ -26,39 +26,75 @@ export function Button({
   textStyle,
 }: ButtonProps) {
   const buttonStyle = [
-    styles.base, 
-    styles[variant], 
+    styles.base,
+    styles[variant],
     styles[`size_${size}`],
-    style, // Style personnalisé ajouté
+    disabled && styles.disabled,
+    style,
   ];
 
   const mergedTextStyle = [
-    styles.text, 
+    styles.text,
     variant === 'link' && styles.linkText,
     variant === 'outline' && styles.outlineText,
-    textStyle, // Style de texte personnalisé ajouté
+    variant === 'secondary' && styles.secondaryText,
+    variant === 'ghost' && styles.ghostText,
+    disabled && styles.disabledText,
+    textStyle,
   ];
+
+  // Fonction pour rendre le contenu
+  const renderContent = () => {
+    // Si on a une icône ET un titre
+    if (icon && title) {
+      return (
+        <View style={styles.contentContainer}>
+          <View style={styles.iconContainer}>
+            {icon}
+          </View>
+          {typeof title === 'string' ? (
+            <Text style={[mergedTextStyle, styles.textWithIcon]}>{title}</Text>
+          ) : (
+            <View style={styles.titleContainer}>
+              {title}
+            </View>
+          )}
+        </View>
+      );
+    }
+
+    // Si on a seulement une icône
+    if (icon) {
+      return (
+        <View style={styles.iconContainer}>
+          {icon}
+        </View>
+      );
+    }
+
+    // Si on a seulement un titre
+    if (title) {
+      return typeof title === 'string' ? (
+        <Text style={mergedTextStyle}>{title}</Text>
+      ) : (
+        <View style={styles.titleContainer}>
+          {title}
+        </View>
+      );
+    }
+
+    // Fallback si rien n'est fourni
+    return <Text style={mergedTextStyle}>Button</Text>;
+  };
 
   return (
     <TouchableOpacity
       style={buttonStyle}
       onPress={onPress}
       disabled={disabled}
-      activeOpacity={0.8}
+      activeOpacity={disabled ? 1 : 0.8}
     >
-      {icon ? (
-        <View style={styles.iconContainer}>
-          {icon}
-        </View>
-      ) : (
-        typeof title === 'string' ? (
-          <Text style={mergedTextStyle}>{title}</Text>
-        ) : (
-          <View style={styles.iconContainer}>
-            {title}
-          </View>
-        )
-      )}
+      {renderContent()}
     </TouchableOpacity>
   );
 }
@@ -91,6 +127,9 @@ const styles = StyleSheet.create({
   link: {
     backgroundColor: 'transparent',
   },
+  disabled: {
+    opacity: 0.5,
+  },
   size_default: {
     height: 40,
   },
@@ -110,6 +149,7 @@ const styles = StyleSheet.create({
   text: {
     color: '#fff',
     fontWeight: '500',
+    fontSize: 14,
   },
   linkText: {
     color: '#3b82f6',
@@ -118,8 +158,29 @@ const styles = StyleSheet.create({
   outlineText: {
     color: '#374151',
   },
+  secondaryText: {
+    color: '#374151',
+  },
+  ghostText: {
+    color: '#374151',
+  },
+  disabledText: {
+    color: '#9ca3af',
+  },
   iconContainer: {
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  titleContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  contentContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  textWithIcon: {
+    marginLeft: 8,
   },
 });
