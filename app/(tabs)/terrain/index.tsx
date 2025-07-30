@@ -187,9 +187,8 @@ export default function TerrainScreen() {
       return 'En attente';
     }
   });
-  const tabs = userRole === 'superviseur' 
-    ? ['À assigner', 'À valider', 'Validés']
-    : ['En attente', 'Validés'];
+  const tabs =
+    userRole === 'superviseur' ? ['À assigner', 'À valider', 'Validés'] : ['En attente', 'Validés'];
 
   useEffect(() => {
     if (user) {
@@ -331,7 +330,11 @@ export default function TerrainScreen() {
         </View>
       ) : userRole === 'technicien' ? (
         <View>
-          <SubNavTabs tabs={['En attente', 'Validés']} activeTab={activeTab} onChange={setActiveTab} />
+          <SubNavTabs
+            tabs={['En attente', 'Validés']}
+            activeTab={activeTab}
+            onChange={setActiveTab}
+          />
           {activeTab === 'En attente' && (
             <ScrollView horizontal={true} style={styles.viewContainer}>
               <TerrainTable
@@ -362,7 +365,11 @@ export default function TerrainScreen() {
         </View>
       ) : (
         <View>
-          <SubNavTabs tabs={['En attente', 'Validés']} activeTab={activeTab} onChange={setActiveTab} />
+          <SubNavTabs
+            tabs={['En attente', 'Validés']}
+            activeTab={activeTab}
+            onChange={setActiveTab}
+          />
           {activeTab === 'En attente' && (
             <ScrollView horizontal={true} style={styles.viewContainer}>
               <TerrainTable
@@ -391,13 +398,27 @@ export default function TerrainScreen() {
           )}
         </View>
       )}
-      {isTerrainValidateOpen && selectedTerrain && 
+
+      {/* For creating a new terrain */}
+      {isTerrainDialogOpen && (
+        <TerrainEditDialog
+          isOpen={isTerrainDialogOpen}
+          onClose={() => setIsTerrainDialogOpen(false)}
+          terrain={undefined}
+          onSubmitSuccess={handleTerrainSaved}
+          userId={user?.id ?? ''}
+          userRole={userRole}
+          agriculteurs={agriculteurs}
+        />
+      )}
+
+      {isTerrainValidateOpen && selectedTerrain && (
         <TerrainEditDialog
           isOpen={isTerrainValidateOpen}
           onClose={() => setIsTerrainValidateOpen(false)}
           terrain={{
             ...selectedTerrain,
-            id_tantsaha: selectedTerrain.id_tantsaha ?? undefined
+            id_tantsaha: selectedTerrain.id_tantsaha ?? undefined,
           }}
           onSubmitSuccess={handleTerrainSaved}
           userId={user?.id ?? ''}
@@ -405,8 +426,15 @@ export default function TerrainScreen() {
           isValidationMode={true}
           agriculteurs={agriculteurs}
         />
-      }
-       {isTerrainCardOpen && selectedTerrain && <TerrainCard isOpen={isTerrainCardOpen} onClose={() => setIsTerrainCardOpen(false)} terrain={selectedTerrain} onTerrainUpdate={handleTerrainUpdate} />}
+      )}
+      {isTerrainCardOpen && selectedTerrain && (
+        <TerrainCard
+          isOpen={isTerrainCardOpen}
+          onClose={() => setIsTerrainCardOpen(false)}
+          terrain={selectedTerrain}
+          onTerrainUpdate={handleTerrainUpdate}
+        />
+      )}
     </View>
   );
 }
