@@ -27,7 +27,7 @@ import {
   AlertDialogTitle,
 } from '../../components/ui/alert-dialog';
 import { Pencil, Trash2, Mail, User, MapPin, Calendar, Check, X } from 'lucide-react-native';
-import ProjectPhotosGallery from 'components/ProjectPhotosGallery';
+// import ProjectPhotosGallery from 'components/ProjectPhotosGallery';
 import UserAvatar from 'components/terrain/UserAvatar';
 import { supabase } from 'integrations/supabase/client';
 import Toast from 'react-native-toast-message';
@@ -523,7 +523,7 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
       </AlertDialog>
 
       {/* GALERIES PHOTOS CORRIGÉES */}
-      <ProjectPhotosGallery
+      {/* <ProjectPhotosGallery
         isOpen={photoGalleryOpen}
         onClose={() => {
           console.log('🚪 FERMETURE galerie photos');
@@ -545,7 +545,7 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
         title={`Photos de validation: ${terrain.nom_terrain}`}
         terrainCoordinates={polygonCoordinates}
         initialTab="photos"
-      />
+      /> */}
     </>
   );
 };

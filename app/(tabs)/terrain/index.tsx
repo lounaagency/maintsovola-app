@@ -391,15 +391,7 @@ export default function TerrainScreen() {
           )}
         </View>
       )}
-      {/* {isTerrainCardOpen && selectedTerrain && (
-        <TerrainCard
-          isOpen={isTerrainCardOpen}
-          onClose={() => setIsTerrainCardOpen(false)}
-          terrain={selectedTerrain}
-          onTerrainUpdate={handleTerrainUpdate}
-        />
-      )} */}
-      {/* {isTerrainDialogOpen && (
+      {isTerrainValidateOpen && selectedTerrain && 
         <TerrainEditDialog
           isOpen={isTerrainValidateOpen}
           onClose={() => setIsTerrainValidateOpen(false)}
@@ -413,7 +405,7 @@ export default function TerrainScreen() {
           isValidationMode={true}
           agriculteurs={agriculteurs}
         />
-      )} */}
+      }
        {isTerrainCardOpen && selectedTerrain && <TerrainCard isOpen={isTerrainCardOpen} onClose={() => setIsTerrainCardOpen(false)} terrain={selectedTerrain} onTerrainUpdate={handleTerrainUpdate} />}
     </View>
   );
