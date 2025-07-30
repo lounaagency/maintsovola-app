@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState ,useEffect} from 'react';
 import {
   View,
   Text,
@@ -26,7 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '../../components/ui/alert-dialog';
-import { Pencil, Trash2, Mail, User, MapPin, Calendar, Check, X } from 'lucide-react';
+import { Pencil, Trash2, Mail, User, MapPin, Calendar, Check, X } from 'lucide-react-native';
 import ProjectPhotosGallery from 'components/ProjectPhotosGallery';
 import UserAvatar from 'components/terrain/UserAvatar';
 import { supabase } from 'integrations/supabase/client';
@@ -66,6 +66,23 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
     userRole === 'superviseur' ||
     (userRole === 'simple' && terrain.id_tantsaha === user?.id && !terrain.statut);
 
+    const handlePhotoGalleryOpen = () => {
+    console.log('🔍 Clic sur Voir toutes (photos)', { photosLength: photos.length });
+    setPhotoGalleryOpen(true);
+  };
+
+  const handleValidationPhotoGalleryOpen = () => {
+    console.log('🔍 Clic sur Voir toutes (validation)',{ validationPhotosLength: validationPhotos.length });
+    setValidationPhotoGalleryOpen(true);
+  };
+
+  useEffect(() => {
+    console.log('État photoGalleryOpen:', photoGalleryOpen);
+  }, [photoGalleryOpen]);
+
+  useEffect(() => {
+    console.log('État validationPhotoGalleryOpen:', validationPhotoGalleryOpen);
+  }, [validationPhotoGalleryOpen]);
   // Convert polygon coordinates from GeoJSON to MapView format
   const getPolygonCoordinates = () => {
     if (!terrain.geom) return [];
@@ -88,29 +105,51 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
 
   const polygonCoordinates = getPolygonCoordinates();
 
-  // Get photo arrays
+  // FONCTION CORRIGÉE pour récupérer les photos
   const getPhotos = () => {
     if (!terrain.photos) return [];
 
-    return typeof terrain.photos === 'string'
-      ? terrain.photos.split(',').filter((p) => p.trim() !== '')
-      : Array.isArray(terrain.photos)
-        ? terrain.photos.filter((p) => p)
-        : [];
+    // Si c'est une chaîne, la diviser par virgules
+    if (typeof terrain.photos === 'string') {
+      return terrain.photos
+        .split(',')
+        .map(p => p.trim())
+        .filter(p => p !== '' && p !== null && p !== undefined);
+    }
+    
+    // Si c'est déjà un tableau
+    if (Array.isArray(terrain.photos)) {
+      return terrain.photos.filter(p => p && p.trim && p.trim() !== '');
+    }
+
+    return [];
   };
 
+  // FONCTION CORRIGÉE pour récupérer les photos de validation
   const getValidationPhotos = () => {
     if (!terrain.photos_validation) return [];
 
-    return typeof terrain.photos_validation === 'string'
-      ? terrain.photos_validation.split(',').filter((p) => p.trim() !== '')
-      : Array.isArray(terrain.photos_validation)
-        ? terrain.photos_validation.filter((p) => p)
-        : [];
+    // Si c'est une chaîne, la diviser par virgules
+    if (typeof terrain.photos_validation === 'string') {
+      return terrain.photos_validation
+        .split(',')
+        .map(p => p.trim())
+        .filter(p => p !== '' && p !== null && p !== undefined);
+    }
+    
+    // Si c'est déjà un tableau
+    if (Array.isArray(terrain.photos_validation)) {
+      return terrain.photos_validation.filter(p => p && p.trim && p.trim() !== '');
+    }
+
+    return [];
   };
 
   const photos = getPhotos();
   const validationPhotos = getValidationPhotos();
+
+  // FONCTIONS CORRIGÉES pour l'ouverture des galeries
+  
 
   const handleDelete = async () => {
     if (!user) return;
@@ -181,7 +220,7 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
 
   return (
     <>
-      <Modal visible={isOpen} animationType="slide" onRequestClose={onClose}>
+      <Modal visible={isOpen} animationType="fade" onRequestClose={onClose}>
         <View style={styles.modalContainer}>
           <View style={styles.header}>
             <Text style={styles.title}>{terrain.nom_terrain}</Text>
@@ -286,7 +325,7 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
                     </View>
                   </View>
                 </View>
-
+{/*MANOMBOKA ETO ********************************************* map*/}
                 <View style={styles.mapPhotoContainer}>
                   <View style={styles.mapContainer}>
                     {polygonCoordinates.length > 0 ? (
@@ -316,16 +355,17 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
                       </View>
                     )}
                   </View>
-
-                  {photos.length > 0 && (
+{/*mIAFARANA ETO ********************************************* map/}
+                  {/* SECTION PHOTOS CORRIGÉE */}
+                  {/*(
                     <View style={styles.card}>
                       <View style={styles.cardContent}>
                         <View style={styles.photoHeader}>
-                          <Text style={styles.photoTitle}>Photos</Text>
+                          <Text style={styles.photoTitle}>Photos ({photos.length})</Text>
                           <Button
                             variant="outline"
                             size="sm"
-                            onPress={() => setPhotoGalleryOpen(true)}
+                            onPress={handlePhotoGalleryOpen}
                             title="Voir toutes"
                           />
                         </View>
@@ -336,6 +376,7 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
                                 source={{ uri: photo }}
                                 style={styles.photoImage}
                                 resizeMode="cover"
+                                onError={(error) => console.log('❌ Erreur photo preview:', error)}
                               />
                             </View>
                           ))}
@@ -347,7 +388,7 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
                         </View>
                       </View>
                     </View>
-                  )}
+                  )*/}
                 </View>
               </View>
             ) : (
@@ -397,15 +438,16 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
                       </View>
                     </View>
 
-                    {validationPhotos.length > 0 && (
+                    {/* SECTION PHOTOS DE VALIDATION CORRIGÉE */}
+                    {/*(
                       <View style={styles.card}>
                         <View style={styles.cardContent}>
                           <View style={styles.photoHeader}>
-                            <Text style={styles.photoTitle}>Photos de validation</Text>
+                            <Text style={styles.photoTitle}>Photos de validation ({validationPhotos.length})</Text>
                             <Button
                               variant="outline"
                               size="sm"
-                              onPress={() => setValidationPhotoGalleryOpen(true)}
+                              onPress={handleValidationPhotoGalleryOpen}
                               title="Voir toutes"
                             />
                           </View>
@@ -416,6 +458,7 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
                                   source={{ uri: photo }}
                                   style={styles.photoImage}
                                   resizeMode="cover"
+                                  onError={(error) => console.log('❌ Erreur photo validation:', error)}
                                 />
                               </View>
                             ))}
@@ -429,7 +472,7 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
                           </View>
                         </View>
                       </View>
-                    )}
+                    )*/}
                   </View>
                 ) : (
                   <View style={styles.notValidated}>
@@ -443,19 +486,18 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
           </ScrollView>
 
           <View style={styles.footer}>
-            {canDelete && (
+            {/*canDelete && (
               <Button
                 variant="destructive"
                 onPress={() => setIsDeleteConfirmOpen(true)}
                 icon={<Trash2 size={16} color="white" />}
-                title="Supprimer"
               />
-            )}
-            <Button variant="outline" onPress={onClose} title="Fermer" />
+            )*/}
+            <Button variant="outline"  onPress={onClose} style={{ flex: 1 }} title="Fermer"/>
           </View>
         </View>
       </Modal>
-
+            
       {/* Delete confirmation */}
       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
         <AlertDialogContent>
@@ -480,20 +522,29 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Photo galleries */}
+      {/* GALERIES PHOTOS CORRIGÉES */}
       <ProjectPhotosGallery
         isOpen={photoGalleryOpen}
-        onClose={() => setPhotoGalleryOpen(false)}
+        onClose={() => {
+          console.log('🚪 FERMETURE galerie photos');
+          setPhotoGalleryOpen(false);
+        }}
         photos={photos}
         title={`Photos: ${terrain.nom_terrain}`}
         terrainCoordinates={polygonCoordinates}
+        initialTab="photos"
       />
 
       <ProjectPhotosGallery
         isOpen={validationPhotoGalleryOpen}
-        onClose={() => setValidationPhotoGalleryOpen(false)}
+        onClose={() => {
+          console.log('🚪 FERMETURE galerie validation');
+          setValidationPhotoGalleryOpen(false);
+        }}
         photos={validationPhotos}
         title={`Photos de validation: ${terrain.nom_terrain}`}
+        terrainCoordinates={polygonCoordinates}
+        initialTab="photos"
       />
     </>
   );

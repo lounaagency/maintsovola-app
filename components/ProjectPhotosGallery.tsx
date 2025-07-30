@@ -11,14 +11,15 @@ import {
 } from 'react-native';
 import MapView, { Polygon, UrlTile } from 'react-native-maps';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import { Button } from 'components/terrain/button'; // Import de votre composant Button
+import { Button } from 'components/terrain/button';
+import { X } from 'lucide-react-native';
 
 interface ProjectPhotosGalleryProps {
   isOpen: boolean;
   onClose: () => void;
   photos: string[];
   title?: string;
-  terrainCoordinates?: number[][];
+  terrainCoordinates?: Array<{ latitude: number; longitude: number }>;
   initialTab?: 'photos' | 'map';
 }
 
@@ -39,86 +40,101 @@ const ProjectPhotosGallery: React.FC<ProjectPhotosGalleryProps> = ({
   useEffect(() => {
     if (isOpen) {
       setActiveTab(initialTab);
+      setCurrentPhotoIndex(0);
     }
   }, [isOpen, initialTab]);
 
-  const hasPhotos = photos && photos.length > 0;
-  const hasMapData = terrainCoordinates && terrainCoordinates.length >= 3;
+  // Vérification des données - même logique que TerrainCard
+  const validPhotos = Array.isArray(photos) ? photos.filter(photo => photo && photo.trim() !== '') : [];
+  const hasPhotos = validPhotos.length > 0;
+  const hasMapData = Array.isArray(terrainCoordinates) && terrainCoordinates.length >= 3;
 
-  if (!hasPhotos && !hasMapData) {
-    return null;
-  }
+  console.log('ProjectPhotosGallery render:', {
+    isOpen,
+    hasPhotos,
+    photosCount: validPhotos.length,
+    hasMapData,
+    title
+  });
 
   const handlePrevious = () => {
-    setCurrentPhotoIndex((prev) => (prev === 0 ? photos.length - 1 : prev - 1));
+    if (validPhotos.length > 1) {
+      setCurrentPhotoIndex((prev) => (prev === 0 ? validPhotos.length - 1 : prev - 1));
+    }
   };
 
   const handleNext = () => {
-    setCurrentPhotoIndex((prev) => (prev === photos.length - 1 ? 0 : prev + 1));
+    if (validPhotos.length > 1) {
+      setCurrentPhotoIndex((prev) => (prev === validPhotos.length - 1 ? 0 : prev + 1));
+    }
   };
 
   const handleThumbnailClick = (index: number) => {
     setCurrentPhotoIndex(index);
   };
 
-  const polygonCoordinates = terrainCoordinates
-    ? terrainCoordinates.map((coord) => ({
-        latitude: coord[0],
-        longitude: coord[1],
-      }))
-    : [];
-
   const renderPhotoContent = () => {
-    if (!hasPhotos) return null;
+    if (!hasPhotos) {
+      return (
+        <View style={styles.noDataContainer}>
+          <MaterialCommunityIcons name="image-off" size={48} color="#9CA3AF" />
+          <Text style={styles.noDataText}>Aucune photo disponible</Text>
+        </View>
+      );
+    }
 
     return (
       <View style={styles.photoContainer}>
         <View style={[styles.mainPhotoContainer, { height: photoHeight }]}>
-          <Image
-            source={{ uri: photos[currentPhotoIndex] }}
-            style={styles.mainPhoto}
-            resizeMode="contain"
-          />
+          {validPhotos[currentPhotoIndex] && (
+            <Image
+              source={{ uri: validPhotos[currentPhotoIndex] }}
+              style={styles.mainPhoto}
+              resizeMode="contain"
+              onError={(error) => console.log('❌ Erreur chargement photo:', error)}
+            />
+          )}
 
-          {photos.length > 1 && (
+          {validPhotos.length > 1 && (
             <>
-              <Button
-                variant="ghost"
-                size="icon"
+              <TouchableOpacity
+                style={[styles.navButton, styles.prevButton]}
                 onPress={handlePrevious}
-                style={StyleSheet.flatten([styles.navButton, styles.prevButton])}
-                icon={<MaterialCommunityIcons name="chevron-left" size={24} color="white" />}
-              />
-              <Button
-                variant="ghost"
-                size="icon"
+              >
+                <MaterialCommunityIcons name="chevron-left" size={24} color="white" />
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.navButton, styles.nextButton]}
                 onPress={handleNext}
-                style={StyleSheet.flatten([styles.navButton, styles.nextButton])}
-                icon={<MaterialCommunityIcons name="chevron-right" size={24} color="white" />}
-              />
+              >
+                <MaterialCommunityIcons name="chevron-right" size={24} color="white" />
+              </TouchableOpacity>
             </>
           )}
 
           <View style={styles.photoCounter}>
             <Text style={styles.photoCounterText}>
-              {currentPhotoIndex + 1} / {photos.length}
+              {currentPhotoIndex + 1} / {validPhotos.length}
             </Text>
           </View>
         </View>
 
-        {photos.length > 1 && (
+        {validPhotos.length > 1 && (
           <FlatList
             horizontal
-            data={photos}
+            data={validPhotos}
             renderItem={({ item, index }) => (
               <TouchableOpacity
                 onPress={() => handleThumbnailClick(index)}
-                style={[styles.thumbnail, index === currentPhotoIndex && styles.selectedThumbnail]}>
+                style={[styles.thumbnail, index === currentPhotoIndex && styles.selectedThumbnail]}
+              >
                 <Image source={{ uri: item }} style={styles.thumbnailImage} resizeMode="cover" />
               </TouchableOpacity>
             )}
             keyExtractor={(item, index) => index.toString()}
             contentContainerStyle={styles.thumbnailsContainer}
+            showsHorizontalScrollIndicator={false}
           />
         )}
       </View>
@@ -126,30 +142,33 @@ const ProjectPhotosGallery: React.FC<ProjectPhotosGalleryProps> = ({
   };
 
   const renderMapContent = () => {
-    if (!hasMapData)
+    if (!hasMapData) {
       return (
-        <View style={styles.noMapDataContainer}>
-          <Text style={styles.noMapDataText}>Aucune donnée de carte disponible</Text>
+        <View style={styles.noDataContainer}>
+          <MaterialCommunityIcons name="map-marker-off" size={48} color="#9CA3AF" />
+          <Text style={styles.noDataText}>Aucune donnée de carte disponible</Text>
         </View>
       );
+    }
 
     return (
       <View style={styles.mapContainer}>
         <MapView
           style={styles.map}
           initialRegion={{
-            latitude: polygonCoordinates[0].latitude,
-            longitude: polygonCoordinates[0].longitude,
+            latitude: terrainCoordinates![0].latitude,
+            longitude: terrainCoordinates![0].longitude,
             latitudeDelta: 0.01,
             longitudeDelta: 0.01,
-          }}>
+          }}
+        >
           <UrlTile
             urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             maximumZ={19}
             tileSize={256}
           />
           <Polygon
-            coordinates={polygonCoordinates}
+            coordinates={terrainCoordinates!}
             strokeColor="red"
             fillColor="rgba(255,0,0,0.3)"
             strokeWidth={2}
@@ -159,16 +178,18 @@ const ProjectPhotosGallery: React.FC<ProjectPhotosGalleryProps> = ({
     );
   };
 
+  // MÊME STRUCTURE QUE TerrainCard
   return (
-    <Modal visible={isOpen} animationType="slide" transparent={false} onRequestClose={onClose}>
+    <Modal visible={isOpen} animationType="fade" onRequestClose={onClose}>
       <View style={styles.modalContainer}>
+        {/* Header identique à TerrainCard */}
         <View style={styles.header}>
           <Text style={styles.title}>{title}</Text>
           <Button
             variant="ghost"
             size="icon"
             onPress={onClose}
-            icon={<MaterialCommunityIcons name="close" size={24} color="#000" />}
+            icon={<X size={24} color="#000" />}
           />
         </View>
 
@@ -176,37 +197,57 @@ const ProjectPhotosGallery: React.FC<ProjectPhotosGalleryProps> = ({
           {hasPhotos && hasMapData
             ? 'Naviguez entre les photos et la carte du terrain'
             : hasPhotos
-              ? 'Parcourez les photos du terrain'
-              : "Visualisez l'emplacement du terrain"}
+              ? `${validPhotos.length} photo${validPhotos.length > 1 ? 's' : ''} disponible${validPhotos.length > 1 ? 's' : ''}`
+              : hasMapData
+                ? "Visualisez l'emplacement du terrain"
+                : "Aucun contenu disponible pour ce terrain"}
         </Text>
 
+        {/* Tabs comme dans TerrainCard */}
         {hasPhotos && hasMapData && (
           <View style={styles.tabsContainer}>
             <Button
               variant={activeTab === 'photos' ? 'secondary' : 'ghost'}
               size="sm"
               onPress={() => setActiveTab('photos')}
-              title="Photos"
-              style={styles.tabButton}
+              title={`Photos (${validPhotos.length})`}
             />
             <Button
               variant={activeTab === 'map' ? 'secondary' : 'ghost'}
               size="sm"
               onPress={() => setActiveTab('map')}
               title="Carte"
-              style={styles.tabButton}
             />
           </View>
         )}
 
+        {/* Contenu scrollable comme TerrainCard */}
         <View style={styles.contentContainer}>
-          {hasPhotos && hasMapData
-            ? activeTab === 'photos'
-              ? renderPhotoContent()
-              : renderMapContent()
-            : hasPhotos
-              ? renderPhotoContent()
-              : renderMapContent()}
+          {!hasPhotos && !hasMapData ? (
+            <View style={styles.emptyStateContainer}>
+              <MaterialCommunityIcons name="image-off" size={64} color="#9CA3AF" />
+              <Text style={styles.emptyStateTitle}>Aucun contenu disponible</Text>
+              <Text style={styles.emptyStateText}>
+                Il n'y a ni photos ni données de carte pour ce terrain.
+              </Text>
+            </View>
+          ) : hasPhotos && hasMapData ? (
+            activeTab === 'photos' ? renderPhotoContent() : renderMapContent()
+          ) : hasPhotos ? (
+            renderPhotoContent()
+          ) : (
+            renderMapContent()
+          )}
+        </View>
+
+        {/* Footer comme TerrainCard */}
+        <View style={styles.footer}>
+          <Button 
+            variant="outline" 
+            onPress={onClose} 
+            style={{ flex: 1 }} 
+            title="Fermer"
+          />
         </View>
       </View>
     </Modal>
@@ -228,20 +269,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: 'bold',
+    color: '#10B981',
   },
   description: {
     fontSize: 14,
-    color: '#666',
+    color: '#6B7280',
     marginBottom: 16,
+    textAlign: 'center',
   },
   tabsContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 8,
     marginBottom: 16,
-  },
-  tabButton: {
-    flex: 1,
   },
   contentContainer: {
     flex: 1,
@@ -251,7 +291,7 @@ const styles = StyleSheet.create({
   },
   mainPhotoContainer: {
     width: '100%',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F5F5F5',
     borderRadius: 8,
     overflow: 'hidden',
     marginBottom: 16,
@@ -267,8 +307,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: '50%',
     marginTop: -20,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(0,0,0,0.5)',
     borderRadius: 20,
+    padding: 8,
+    zIndex: 1,
   },
   prevButton: {
     left: 16,
@@ -280,7 +322,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 16,
     right: 16,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
@@ -288,6 +330,7 @@ const styles = StyleSheet.create({
   photoCounterText: {
     color: 'white',
     fontSize: 12,
+    fontWeight: '500',
   },
   thumbnailsContainer: {
     paddingHorizontal: 8,
@@ -302,21 +345,44 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   selectedThumbnail: {
-    borderColor: '#3b82f6',
+    borderColor: '#10B981',
   },
   thumbnailImage: {
     width: '100%',
     height: '100%',
   },
-  noMapDataContainer: {
+  noDataContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#F9FAFB',
     borderRadius: 8,
+    padding: 32,
   },
-  noMapDataText: {
-    color: '#666',
+  noDataText: {
+    color: '#6B7280',
+    fontSize: 16,
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 32,
+  },
+  emptyStateTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#374151',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  emptyStateText: {
+    fontSize: 14,
+    color: '#6B7280',
+    textAlign: 'center',
+    lineHeight: 20,
   },
   mapContainer: {
     flex: 1,
@@ -325,6 +391,12 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  footer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 16,
+    gap: 8,
   },
 });
 
