@@ -19,27 +19,24 @@ import { getAllUsers, getConversation, setNewConversation, subscribeToConversati
 import { 
     Conversation,
     Utilisateur, 
-    // Message 
 } from '~/type/messageInterface';
 import RenderConversation from './RenderItem';
 import { router } from 'expo-router';
 import RenderUsers from './RenderUsers';
 import Modal from 'react-native-modal';
-import { LucideDelete } from 'lucide-react-native';
+import { LucideX } from 'lucide-react-native';
 import { supabase } from '~/lib/data';
 import SearchBar from './SearchBar';
 import FloatingActionButton from './FloatingActionButton';
-// import { TouchableOpacity, Text } from 'react-native';
 
 const { height: screenHeight } = Dimensions.get('window');
 
 const ConversationMessage = () => {
     const [conversations, setConversations] = useState<Conversation[]>([]);
-    const [everyone, setEveryone] = useState<Utilisateur[]>([]); // Adjust type as needed
+    const [everyone, setEveryone] = useState<Utilisateur[]>([]);
     const [search, setSearch] = useState('');
     const [searchUsers, setSearchUsers] = useState('');
     const [filteredUsers, setFilteredUsers] = useState<Utilisateur[]>([]);
-    
     const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
     const [isUserModalVisible, setUserModalVisible] = useState(false);
 
@@ -48,7 +45,6 @@ const ConversationMessage = () => {
     const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 
     const { user } = useAuth();
-    
     const userId: string = user?.id || '';
 
     const fetchConversations = useCallback(async () => {
@@ -57,11 +53,9 @@ const ConversationMessage = () => {
         try {
             const conversations = await getConversation({ id_user: userId });
             setConversations(conversations);
-            // console.log("Conversations:", JSON.stringify(conversations, null, 2));
         } catch (error) {
             console.error("Error fetching conversations:", error);
-        }
-        finally {
+        } finally {
             setIsLoadingConversations(false);
         }
     }, [userId]);
@@ -70,30 +64,31 @@ const ConversationMessage = () => {
         if (!userId) return;
         setIsLoadingUsers(true);
         try {
-            const allUsers =  await getAllUsers({currentUserId: userId});
+            const allUsers = await getAllUsers({currentUserId: userId});
             setEveryone(allUsers);
-            // console.log("All Users:", JSON.stringify(allUsers, null, 2));
         } catch (error) {
             console.error("Error fetching users:", error);
-        }
-        finally {
+        } finally {
             setIsLoadingUsers(false);
         }
     }, [userId]);
 
+    // Initialisation des données
     useEffect(() => {
         fetchConversations();
         fetchEveryOne();
     }, [fetchConversations, fetchEveryOne]);
     
-    // Juste après que les deux fetch soient terminés :
+    // Mise à jour des listes filtrées - séparée de l'effet précédent
     useEffect(() => {
-        if (conversations.length && everyone.length) {
-            setFilteredConversations(conversations); // affichage initial sans filtre
-        }
-    }, [conversations, everyone]);
+        setFilteredConversations(conversations);
+    }, [conversations]);
+
+    useEffect(() => {
+        setFilteredUsers(everyone);
+    }, [everyone]);
     
-    const handleSearch = (text: string) => {
+    const handleSearch = useCallback((text: string) => {
         setSearch(text);
     
         if (!text.trim()) {
@@ -102,9 +97,7 @@ const ConversationMessage = () => {
         }
     
         const lowerText = text.toLowerCase();
-    
         const filtered = conversations.filter((conv) => {
-            // Identifier l'autre utilisateur
             const otherUserId = conv.id_utilisateur1 === userId
                 ? conv.id_utilisateur2
                 : conv.id_utilisateur1;
@@ -120,42 +113,56 @@ const ConversationMessage = () => {
         });
     
         setFilteredConversations(filtered);
-    };
+    }, [conversations, everyone, userId]);
 
-    const handleSearchUsers = (text: string) => {
-      setSearchUsers(text);
-      if (!text.trim()) {
-        setFilteredUsers(everyone);
-        return;
-      }
-      const lowerText = text.toLowerCase();
+    const handleSearchUsers = useCallback((text: string) => {
+        setSearchUsers(text);
+        if (!text.trim()) {
+            setFilteredUsers(everyone);
+            return;
+        }
+        const lowerText = text.toLowerCase();
         const filtered = everyone.filter((user) => {
-          return (
-            user.nom?.toLowerCase().includes(lowerText) ||
-            user.prenoms?.toLowerCase().includes(lowerText) ||
-            user.email?.toLowerCase().includes(lowerText)
-          );
-      });
-      setFilteredUsers(filtered);
-    };
-    
-    useEffect(() => {
-      setFilteredUsers(everyone);
-      setFilteredConversations(conversations);
-    }, [everyone, conversations]);
+            return (
+                user.nom?.toLowerCase().includes(lowerText) ||
+                user.prenoms?.toLowerCase().includes(lowerText) ||
+                user.email?.toLowerCase().includes(lowerText)
+            );
+        });
+        setFilteredUsers(filtered);
+    }, [everyone]);
 
+    // Subscription aux nouvelles conversations
     useEffect(() => {
         if (!userId) return;
       
         const subscription = subscribeToConversations(userId, (newConv) => {
-          setConversations((prev) => [newConv, ...prev]);
-          setFilteredConversations((prev) => [newConv, ...prev]);
+            setConversations((prev) => [newConv, ...prev]);
         });
       
         return () => {
-          supabase.removeChannel(subscription);
+            supabase.removeChannel(subscription);
         };
-      }, [userId]);
+    }, [userId]);
+
+    const createConversation = async (otherUserId: string, currentUserId: string) => {
+        try {
+            const new_id_conversation = await setNewConversation({ currentUserId, otherUserId });
+            if (!new_id_conversation) {
+                console.warn("No conversation ID returned.");
+                return;
+            }
+            console.log("Creating conversation with otherUserId:", otherUserId, "and currentUserId:", currentUserId);
+            router.push(`/messages/chat/${new_id_conversation}`);
+        } catch (error) {
+            console.error("Error fetching conversation:", error);
+        }
+    };
+
+    const navigateToChat = (conversation: Conversation) => {
+        console.log("Navigating to chat with conversation:", conversation);
+        router.push(`/messages/chat/${conversation.id_conversation}`);
+    };
 
     // Composant de chargement
     const LoadingComponent = () => (
@@ -186,6 +193,7 @@ const ConversationMessage = () => {
                 <SearchBar search={search} handleSearch={handleSearch} />
             </View>
 
+            {/* Modal pour sélectionner un utilisateur */}
             <Modal
                 isVisible={isUserModalVisible}
                 onBackdropPress={() => setUserModalVisible(false)}
@@ -193,23 +201,30 @@ const ConversationMessage = () => {
                 style={{ justifyContent: 'flex-end', margin: 0 }}
             >
                 <View className="bg-white rounded-t-2xl p-4 max-h-[70%]">
-                    <Text className="text-center text-lg font-semibold mb-4">Nouveau message</Text>
-
-                    <TouchableOpacity onPress={() => setUserModalVisible(false)}>
-                        <Text className="text-green-600 text-base">
-                            <LucideDelete />
+                    {/* Header avec titre et bouton fermer alignés */}
+                    <View className="flex-row items-center justify-between mb-4">
+                        <Text className="text-lg font-semibold text-gray-900">
+                            Nouveau message
                         </Text>
-                    </TouchableOpacity>
+                        <TouchableOpacity 
+                            onPress={() => setUserModalVisible(false)}
+                            className="p-2 -mr-2"
+                        >
+                            <LucideX size={24} color="#666" />
+                        </TouchableOpacity>
+                    </View>
 
+                    {/* Barre de recherche */}
                     <View className="mb-4">
                        <TextInput
-                           className="bg-gray-100 rounded-xl px-4 py-2 text-base"
-                           placeholder="Rechercher une conversation..."
+                           className="bg-gray-100 rounded-xl px-4 py-3 text-base"
+                           placeholder="Rechercher un contact..."
                            value={searchUsers}
                            onChangeText={handleSearchUsers}
                        />
                     </View>
 
+                    {/* Liste des utilisateurs */}
                     {isLoadingUsers ? (
                         <View className="flex-1 justify-center items-center py-10">
                             <ActivityIndicator size="large" color="#25D366" />
@@ -221,11 +236,11 @@ const ConversationMessage = () => {
                             keyExtractor={(item) => item.id_utilisateur}
                             renderItem={({ item }) => (
                                 <RenderUsers 
-                                item={item} 
-                                onPress={async (user) => {
-                                    setUserModalVisible(false);
-                                    await createConversation(user.id_utilisateur, userId);
-                                }}
+                                    item={item} 
+                                    onPress={async (user) => {
+                                        setUserModalVisible(false);
+                                        await createConversation(user.id_utilisateur, userId);
+                                    }}
                                 />
                             )}
                             ListEmptyComponent={() => (
@@ -233,9 +248,9 @@ const ConversationMessage = () => {
                                     <Text className="text-gray-500">Aucun utilisateur trouvé</Text>
                                 </View>
                             )}
+                            showsVerticalScrollIndicator={false}
                         />
                     )}
-                    
                 </View>
             </Modal>
 
@@ -249,45 +264,25 @@ const ConversationMessage = () => {
                         keyExtractor={(item) => item.id_conversation.toString()}
                         renderItem={({ item }) => (
                             <RenderConversation 
-                            item={item} 
-                            onPress={(conv) => navigateToChat(conv)}
+                                item={item} 
+                                onPress={(conv) => navigateToChat(conv)}
                             />
                         )}
                         ListEmptyComponent={<EmptyComponent />}
                         contentContainerStyle={{ 
                             flexGrow: 1,
-                            //paddingBottom: 50 // Espace pour le bouton flottant
                         }}
+                        showsVerticalScrollIndicator={false}
                     />
                 )}
             </View>
 
+            {/* Bouton flottant */}
             <FloatingActionButton 
                 onPress={() => setUserModalVisible(true)}
             />
-
         </View>
     );
-}
-
-export default ConversationMessage;
-
-function navigateToChat(conversation: Conversation) {
-    console.log("Navigating to chat with conversation:", conversation);
-    router.push(`/messages/chat/${conversation.id_conversation}`);
-}
-
-async function createConversation(otherUserId: string, currentUserId: string) {
-    try {
-       const new_id_conversation = await setNewConversation({ currentUserId, otherUserId })
-       if (!new_id_conversation) {
-           console.warn("No conversation ID returned.");
-           return;
-       }
-       console.log("Creating conversation with otherUserId:", otherUserId, "and currentUserId:", currentUserId);
-       router.push(`/messages/chat/${new_id_conversation}`);
-    } catch (error) {
-        console.error("Error fetching conversation:", error);
-    }
 };
 
+export default ConversationMessage;
