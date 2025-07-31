@@ -61,10 +61,22 @@ export type ProjectFilter = {
   culture?: string;
 };
 
-export const useProjectData = (filters: ProjectFilter = {}) => {
+export type PaginationOptions = {
+  limit?: number;
+  page?: number;
+};
+
+export const useProjectData = (filters: ProjectFilter = {}, paginationOptions: PaginationOptions = {}) => {
   const [projects, setProjects] = useState<AgriculturalProject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+
+  // Pagination par défaut
+  const defaultLimit = paginationOptions.limit || 10;
+  const limit = defaultLimit;
 
   // Utilisation du contexte d'authentification
   const { user, profile } = useAuth();
@@ -104,24 +116,31 @@ export const useProjectData = (filters: ProjectFilter = {}) => {
     }
   };
 
-  const fetchProjects = async () => {
+  const fetchProjects = async (page: number = 1, append: boolean = false) => {
     try {
-      setLoading(true);
+      if (page === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+      
       let rawProjects: any[] = [];
 
       // Utiliser les fonctions du service selon les filtres
       if (filters.projectId) {
-        // Récupérer un projet spécifique
+        // Récupérer un projet spécifique (pas de pagination pour un projet unique)
         rawProjects = [await getProjectById(String(filters.projectId))];
+        setHasMore(false);
       } else if (filters.followedUsersOnly && user) {
-        // Récupérer les projets des utilisateurs suivis (nécessite une authentification)
-        rawProjects = await getProjetctFromFollowing(user.id);
+        // Récupérer les projets des utilisateurs suivis avec pagination
+        rawProjects = await getProjetctFromFollowing(user.id, { limit, page });
       } else if (filters.followedUsersOnly && !user) {
         // Si on demande les abonnements mais que l'utilisateur n'est pas connecté
         console.log('Utilisateur non connecté, impossible de récupérer les abonnements');
         rawProjects = [];
+        setHasMore(false);
       } else if (Object.keys(filters).length > 0) {
-        // Utiliser les filtres avancés
+        // Utiliser les filtres avancés avec pagination
         const filterObject = {
           userId: filters.userId,
           status: filters.status || 'en financement',
@@ -129,12 +148,20 @@ export const useProjectData = (filters: ProjectFilter = {}) => {
           district: filters.district,
           commune: filters.commune,
           culture: filters.culture,
+          limit,
+          page,
         };
         rawProjects = await getFilteredProjects(filterObject);
       } else {
-        // Récupérer tous les projets
-        rawProjects = await getAllProjects();
+        // Récupérer tous les projets avec pagination
+        rawProjects = await getAllProjects({ limit, page });
       }
+
+      // Vérifier s'il y a plus de données à charger
+      if (rawProjects.length < limit) {
+        setHasMore(false);
+      }
+
       // Transformer les données brutes en format AgriculturalProject
       const transformedProjects: AgriculturalProject[] = (rawProjects || []).map((projet: any) => {
         const totalFarmingCost = projet.cout_total;
@@ -193,18 +220,45 @@ export const useProjectData = (filters: ProjectFilter = {}) => {
         };
       });
 
-      setProjects(transformedProjects);
+      if (append && page > 1) {
+        // Ajouter les nouveaux projets à la liste existante
+        setProjects(prevProjects => [...prevProjects, ...transformedProjects]);
+      } else {
+        // Remplacer complètement la liste (premier chargement ou refresh)
+        setProjects(transformedProjects);
+      }
+
+      setCurrentPage(page);
     } catch (err) {
       console.error('Erreur lors de la récupération des projets:', err);
       setError(err instanceof Error ? err.message : 'Erreur inconnue');
       console.log('Erreur lors du chargement des projets');
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
   };
 
+  // Fonction pour charger la page suivante
+  const loadMore = async () => {
+    if (!hasMore || loadingMore || loading) return;
+    
+    const nextPage = currentPage + 1;
+    await fetchProjects(nextPage, true);
+  };
+
+  // Fonction pour rafraîchir les données (retour à la page 1)
+  const refresh = async () => {
+    setCurrentPage(1);
+    setHasMore(true);
+    await fetchProjects(1, false);
+  };
+
   useEffect(() => {
-    fetchProjects();
+    // Reset pagination when filters change
+    setCurrentPage(1);
+    setHasMore(true);
+    fetchProjects(1, false);
   }, [
     filters.projectId,
     filters.userId,
@@ -219,9 +273,14 @@ export const useProjectData = (filters: ProjectFilter = {}) => {
   return {
     projects,
     loading,
+    loadingMore,
     error,
+    hasMore,
+    currentPage,
     toggleLike,
-    refetch: fetchProjects,
+    loadMore,
+    refresh,
+    refetch: () => fetchProjects(1, false),
     // Informations d'authentification utiles
     isAuthenticated: !!user,
     currentUser: user,
