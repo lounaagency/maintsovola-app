@@ -24,8 +24,9 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { TrendingUp, Users, MapPin, FileText, ArrowRight, ChevronRight } from 'lucide-react-native';
-import { supabase } from '../lib/supabase';
+import { supabase } from '../lib/data';
 import logo from '../assets/maintsovola_logo_pm.png';
+import { useRouter } from "expo-router"
 
 const { width } = Dimensions.get('window');
 
@@ -509,6 +510,7 @@ type RootStackParamList = {
 
 const HomeScreen: React.FC = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
 
   // États
@@ -842,7 +844,7 @@ const HomeScreen: React.FC = () => {
     <Animated.View key={index} entering={FadeInUp.delay(index * 150)} style={styles.quickNavItem}>
       <TouchableOpacity
         style={[styles.quickNavButton, { backgroundColor: item.color }]}
-        onPress={() => navigation.navigate(item.screen)}>
+        onPress={() => router.navigate(item.screen)}>
         <View style={styles.quickNavIconContainer}>
           <item.icon size={24} color="white" />
         </View>
@@ -930,7 +932,7 @@ const HomeScreen: React.FC = () => {
               <Text style={styles.sectionTitle}>Projets Vedettes</Text>
               <TouchableOpacity
                 style={styles.seeAllButton}
-                onPress={() => navigation.navigate('Feed')}>
+                onPress={() => router.navigate('/feed')}>
                 <Text style={styles.seeAllText}>Voir tout</Text>
                 <ArrowRight size={16} color="#10b981" />
               </TouchableOpacity>
