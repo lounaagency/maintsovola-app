@@ -74,68 +74,23 @@ export async function getMessages({ id_conversation }: { id_conversation: number
     }
 }
 
-// export async function sendMessage({
-//     id_conversation,
-//     id_expediteur,
-//     id_destinataire,
-//     contenu
-// }: {
-//     id_conversation: number;
-//     id_expediteur: string;
-//     id_destinataire: string;
-//     contenu: string;
-// }): Promise<Message> {
-//     try {
-//         const currentTime = new Date().toISOString();
-        
-//         // Insérer le message
-//         const { data, error } = await supabase
-//         .from("message")
-//         .insert({
-//             id_conversation,
-//             id_expediteur,
-//             id_destinataire,
-//             contenu,
-//             date_envoi: currentTime,
-//             lu: false
-//         })
-//         .select("*")
-//         .single();
+// Fonction corrigée pour récupérer le dernier message
+export async function getLastMessage(conversationId: number): Promise<string> {
+  try {
+    const messages = await getMessages({ id_conversation: conversationId });
+    
+    // Vérifier s'il y a des messages et retourner le premier (le plus récent)
+    if (messages.length > 0) {
+      return messages[0].contenu; // Index [0] pour le premier élément
+    }
+    
+    return '';
+  } catch (error) {
+    console.error("Error getting last message:", error);
+    return 'Erreur de chargement';
+  }
+}
 
-//         if (error) {
-//             throw new Error(`Failed to send message: ${error.message}`);
-//         }
-        
-//         if (!data) {
-//             throw new Error("No message data returned.");
-//         }
-
-//         // Mettre à jour la dernière activité de la conversation
-//       await supabase
-//         .from("conversation")
-//         .update({ derniere_activite: currentTime })
-//         .eq("id_conversation", id_conversation);
-
-//         const message: Message = {
-//             id_message: data.id_message,
-//             id_conversation: data.id_conversation,
-//             id_expediteur: data.id_expediteur,
-//             id_destinataire: data.id_destinataire,
-//             contenu: data.contenu,
-//             date_envoi: data.date_envoi,
-//             lu: data.lu,
-//             created_at: data.created_at,
-//             modified_at: data.modified_at,
-//             pieces_jointes: data.pieces_jointes || [],
-//         };
-
-//         return message;
-
-//     } catch (error) {
-//         console.error("Error sending message:", error);
-//         throw error;
-//     }
-// }
 
 export async function getUsername({ id }: { id: string }): Promise<string> {
   try {
@@ -156,6 +111,34 @@ export async function getUsername({ id }: { id: string }): Promise<string> {
     }
 
     return `${data.nom} ${data.prenoms}`;
+  } catch (err) {
+    console.error('❌ getUsername failed:', err);
+    throw err;
+  }
+}
+
+export async function getUser({ id }: { id: string }): Promise<{username: string, photo_profil: string}> {
+  try {
+    const { data, error } = await supabase
+      .from('utilisateur')
+      .select('nom, prenoms, email, photo_profil')
+      .eq('id_utilisateur', id)
+      .single();
+
+    if (error) {
+      console.error(`❌ Supabase error in getUsername():`, error.message);
+      throw new Error(`Failed to get username: ${error.message}`);
+    }
+
+    if (!data) {
+      console.warn(`⚠️ No user found for id_utilisateur: ${id}`);
+      throw new Error('No user found.');
+    }
+
+    return {
+      username:`${data.nom} ${data.prenoms}`,
+      photo_profil: `${data?.photo_profil || ""}` 
+    };
   } catch (err) {
     console.error('❌ getUsername failed:', err);
     throw err;

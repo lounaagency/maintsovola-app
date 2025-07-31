@@ -239,7 +239,7 @@ const ConversationMessage = () => {
                                     item={item} 
                                     onPress={async (user) => {
                                         setUserModalVisible(false);
-                                        await createConversation(user.id_utilisateur, userId);
+                                        // await createConversation(user.id_utilisateur, userId);
                                     }}
                                 />
                             )}
