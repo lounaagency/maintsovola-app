@@ -1,60 +1,125 @@
-import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
-import { MaterialIcons, FontAwesome, Feather } from '@expo/vector-icons';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
 import Investissement from '../Navigation/Investissement';
 import Projets from '../Navigation/Projets';
 import Paiement from '../Navigation/Paiement';
 import Activity from '../Navigation/Activity';
+import { MaterialIcons, FontAwesome, Feather } from '@expo/vector-icons';
+import { useFetchUserRoleByID } from '~/hooks/useFetchUserRoleByID';
+import ParcellesTechnicien  from "../Navigation/technicien/ParcellesTechnicien";
+import EffectuesTechnicien from "../Navigation/technicien/EffectuesTechnicien";
+import RessourcesTechnicien from "../Navigation/technicien/RessourcesTechnicien";
+import PaiementsTechnicien from '../Navigation/technicien/PaiementsTechnicien';
+import PlanningTechnicien from '../Navigation/technicien/PlanningTechnicien'
 
-const Tab = createMaterialTopTabNavigator();
+export default function ProfileTabs({
+  isCurrentUser,
+  id
+}: {
+  isCurrentUser: boolean,
+  id: string
+}) {
+  let tabs = [
+    {
+      label: 'Poketra',
+      icon: (color: string) => <MaterialIcons name="attach-money" size={20} color={color} />,
+      component: Investissement,
+    },
+    {
+      label: 'Projets',
+      icon: (color: string) => <FontAwesome name="briefcase" size={20} color={color} />,
+      component: Projets,
+    },
+    {
+      label: 'Paiement',
+      icon: (color: string) => <FontAwesome name="credit-card" size={20} color={color} />,
+      component: Paiement,
+    },
+    {
+      label: 'Activité',
+      icon: (color: string) => <Feather name="activity" size={20} color={color} />,
+      component: Activity,
+    },
+  ];
 
-export default function ProfileTabs() {
+
+let tabsTechnicien = [
+  {
+    label: 'Parcelles',
+    icon: (color: string) => <FontAwesome name="map" size={20} color={color} />,
+    component: ParcellesTechnicien, // à remplacer par ton composant réel
+  },
+  {
+    label: 'Effectués',
+    icon: (color: string) => <Feather name="check-circle" size={20} color={color} />,
+    component: EffectuesTechnicien, // à remplacer par ton composant réel
+  },
+  {
+    label: 'Ressources',
+    icon: (color: string) => <MaterialIcons name="inventory" size={20} color={color} />,
+    component: RessourcesTechnicien, // à remplacer par ton composant réel
+  },
+  {
+    label: 'Paiements',
+    icon: (color: string) => <FontAwesome name="credit-card" size={20} color={color} />,
+    component: PaiementsTechnicien,
+  },
+  {
+    label: 'Planning',
+    icon: (color: string) => <MaterialIcons name="calendar-today" size={20} color={color} />,
+    component: PlanningTechnicien,
+  },
+];
+
+
+  const [activeTab, setActiveTab] = useState(0);
+  const { userRole, error } = useFetchUserRoleByID(id);
+
+  // Ajoute d'un rendu pour l'erreur
+  if (error) {
+    return <>
+    <View className="flex-1 items-center justify-center">
+      <Text className="text-red-500 font-semibold text-center">
+        Une erreur est survenue : {error.message || 'Erreur inconnue'}
+      </Text>
+    </View>
+    </>
+  }
+
+  if (!isCurrentUser) {
+    tabs = [tabs[0], tabs[1]]
+  }
+
+  console.log("userRole : ", userRole);
+  const tabProfile = userRole === "technicien" ? tabsTechnicien : tabs;
+  const ActiveComponent = tabProfile[activeTab].component;
+  
   return (
-    <Tab.Navigator
-      screenOptions={{
-        tabBarActiveTintColor: '#125b47',
-        tabBarInactiveTintColor: 'gray',
-        tabBarIndicatorStyle: { backgroundColor: '#125b47' },
-        tabBarLabelStyle: { fontSize: 12, fontWeight: 'bold' },
-        tabBarStyle: { backgroundColor: 'white' },
-        // 
-      }}
-    >
-      <Tab.Screen
-        name="Poketra"
-        component={Investissement}
-        options={{
-          tabBarIcon: ({ color }) => (
-            <MaterialIcons name="attach-money" size={20} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Projets"
-        component={Projets}
-        options={{
-          tabBarIcon: ({ color }) => (
-            <FontAwesome name="briefcase" size={20} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Paiement"
-        component={Paiement}
-        options={{
-          tabBarIcon: ({ color }) => (
-            <FontAwesome name="credit-card" size={20} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Activité"
-        component={Activity}
-        options={{
-          tabBarIcon: ({ color }) => (
-            <Feather name="activity" size={20} color={color} />
-          ),
-        }}
-      />
-    </Tab.Navigator>
+    <View className="flex-1 bg-white">
+      {/* Barre d'onglets fixe en haut */}
+      <View className="flex-row justify-around bg-white border-b p-1 border-gray-200 shadow-sm">
+        {tabProfile.map((tab, index) => {
+          const isActive = index === activeTab;
+          const color = isActive ? '#ffffff' : '#6b7280';
+          return (
+            <TouchableOpacity
+              key={index}
+              onPress={() => setActiveTab(index)}
+              className={`flex-1 items-center p-3 rounded-lg ${isActive ? 'bg-green-500 text-white' : 'bg-white text-gray-500'}`}
+            >
+              {tab.icon(color)}
+              <Text className={`text-xs mt-1 font-semibold ${isActive ? 'text-white' : 'text-gray-400'}`}>
+                {tab.label}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+
+      {/* Contenu défilable */}
+      <ScrollView contentContainerStyle={{ padding: 12 }} showsVerticalScrollIndicator={false}>
+        <ActiveComponent id={id} />
+      </ScrollView>
+    </View>
   );
 }
