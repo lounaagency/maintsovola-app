@@ -8,10 +8,9 @@ import { supabase } from 'integrations/supabase/client';
 import { TerrainData } from '../../../types/Terrain';
 import { useToast } from '../../../components/ui/terrain/use-toast';
 import TerrainTable from '../../../components/terrain/TerrainTable';
-import TerrainCard from '~/components/terrain/TerrainCard';
 import TerrainEditDialog from '../../../components/terrain/TerrainEditDialog';
-
-// import TerrainCard from 'components/terrain/TerrainCard';
+import TerrainCard from '../../../components/terrain/TerrainCard';
+import MessageDialog from '../../../components/terrain/MessageDialog';
 
 const Header = ({ onCreateTerrain }: { onCreateTerrain: () => void }) => {
   return (
@@ -28,7 +27,7 @@ const Header = ({ onCreateTerrain }: { onCreateTerrain: () => void }) => {
 export default function TerrainScreen() {
   const { user, profile } = useAuth();
 
-  const userRole = profile?.nom_role?.toLowerCase() || 'superviseur';
+  const userRole = profile?.nom_role?.toLowerCase() || 'simple';
 
   useEffect(() => {
     if (!user) {
@@ -42,10 +41,15 @@ export default function TerrainScreen() {
   const [pendingTerrains, setPendingTerrains] = useState<TerrainData[]>([]);
   const [validatedTerrains, setValidatedTerrains] = useState<TerrainData[]>([]);
   const [selectedTerrain, setSelectedTerrain] = useState<TerrainData | null>(null);
+  const [selectedTechnicien, setSelectedTechnicien] = useState<{
+    id: string;
+    name: string;
+  } | null>(null);
   const [isTerrainDialogOpen, setIsTerrainDialogOpen] = useState(false);
   const [isTerrainCardOpen, setIsTerrainCardOpen] = useState(false);
   const [isTerrainValidateOpen, setIsTerrainValidateOpen] = useState(false);
   const [isTerrainDeleteOpen, setIsTerrainDeleteOpen] = useState(false);
+  const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
   const [agriculteurs, setAgriculteurs] = useState<
     {
       id_utilisateur: string;
@@ -187,8 +191,9 @@ export default function TerrainScreen() {
       return 'En attente';
     }
   });
-  const tabs =
-    userRole === 'superviseur' ? ['À assigner', 'À valider', 'Validés'] : ['En attente', 'Validés'];
+  const tabs = userRole === 'superviseur' 
+    ? ['À assigner', 'À valider', 'Validés']
+    : ['En attente', 'Validés'];
 
   useEffect(() => {
     if (user) {
@@ -259,7 +264,6 @@ export default function TerrainScreen() {
     setIsTerrainCardOpen(true);
   };
   const handleValidateTerrain = (terrain: TerrainData) => {
-    console.log('Validate terrain:', terrain);
     setSelectedTerrain(terrain);
     setIsTerrainValidateOpen(true);
   };
@@ -279,6 +283,16 @@ export default function TerrainScreen() {
     }
     setIsTerrainDialogOpen(false);
     setIsTerrainValidateOpen(false);
+  };
+  const handleContactTechnicien = (terrain: TerrainData) => {
+    setSelectedTerrain(terrain);
+    if (terrain.id_technicien) {
+      setSelectedTechnicien({
+        id: terrain.id_technicien,
+        name: `${terrain.techniqueNom ?? ''}`.trim()
+      });
+      setIsMessageDialogOpen(true);
+    }
   };
   return (
     <View style={styles.container}>
@@ -330,11 +344,7 @@ export default function TerrainScreen() {
         </View>
       ) : userRole === 'technicien' ? (
         <View>
-          <SubNavTabs
-            tabs={['En attente', 'Validés']}
-            activeTab={activeTab}
-            onChange={setActiveTab}
-          />
+          <SubNavTabs tabs={['En attente', 'Validés']} activeTab={activeTab} onChange={setActiveTab} />
           {activeTab === 'En attente' && (
             <ScrollView horizontal={true} style={styles.viewContainer}>
               <TerrainTable
@@ -345,7 +355,6 @@ export default function TerrainScreen() {
                 onEdit={handleEditTerrain}
                 onViewDetails={handleViewTerrainDetails}
                 onValidate={handleValidateTerrain}
-                onDelete={handleDeleteTerrain}
               />
             </ScrollView>
           )}
@@ -356,20 +365,14 @@ export default function TerrainScreen() {
                 type="validated"
                 userRole={userRole}
                 onTerrainUpdate={handleTerrainUpdate}
-                onEdit={handleEditTerrain}
                 onViewDetails={handleViewTerrainDetails}
-                onDelete={handleDeleteTerrain}
               />
             </ScrollView>
           )}
         </View>
       ) : (
         <View>
-          <SubNavTabs
-            tabs={['En attente', 'Validés']}
-            activeTab={activeTab}
-            onChange={setActiveTab}
-          />
+          <SubNavTabs tabs={['En attente', 'Validés']} activeTab={activeTab} onChange={setActiveTab} />
           {activeTab === 'En attente' && (
             <ScrollView horizontal={true} style={styles.viewContainer}>
               <TerrainTable
@@ -379,7 +382,7 @@ export default function TerrainScreen() {
                 onTerrainUpdate={handleTerrainUpdate}
                 onEdit={handleEditTerrain}
                 onViewDetails={handleViewTerrainDetails}
-                onDelete={handleDeleteTerrain}
+
               />
             </ScrollView>
           )}
@@ -390,35 +393,35 @@ export default function TerrainScreen() {
                 type="validated"
                 userRole={userRole}
                 onTerrainUpdate={handleTerrainUpdate}
-                onEdit={handleEditTerrain}
                 onViewDetails={handleViewTerrainDetails}
-                onDelete={handleDeleteTerrain}
+                onContactTechnicien={handleContactTechnicien}
               />
             </ScrollView>
           )}
         </View>
       )}
-
-      {/* For creating a new terrain */}
+      {/* Dialog pour création/édition de terrain */}
       {isTerrainDialogOpen && (
         <TerrainEditDialog
           isOpen={isTerrainDialogOpen}
           onClose={() => setIsTerrainDialogOpen(false)}
-          terrain={undefined}
-          onSubmitSuccess={handleTerrainSaved}
+          terrain={selectedTerrain as any || undefined}
+          onSubmitSuccess={handleTerrainSaved as any}
           userId={user?.id ?? ''}
           userRole={userRole}
+          isValidationMode={false}
           agriculteurs={agriculteurs}
         />
       )}
 
-      {isTerrainValidateOpen && selectedTerrain && (
+      {/* Dialog pour validation de terrain */}
+      {isTerrainValidateOpen && selectedTerrain && 
         <TerrainEditDialog
           isOpen={isTerrainValidateOpen}
           onClose={() => setIsTerrainValidateOpen(false)}
           terrain={{
             ...selectedTerrain,
-            id_tantsaha: selectedTerrain.id_tantsaha ?? undefined,
+            id_tantsaha: selectedTerrain.id_tantsaha ?? undefined
           }}
           onSubmitSuccess={handleTerrainSaved}
           userId={user?.id ?? ''}
@@ -426,13 +429,37 @@ export default function TerrainScreen() {
           isValidationMode={true}
           agriculteurs={agriculteurs}
         />
-      )}
+      }
+
+      {/* Card pour affichage des détails du terrain */}
       {isTerrainCardOpen && selectedTerrain && (
-        <TerrainCard
-          isOpen={isTerrainCardOpen}
-          onClose={() => setIsTerrainCardOpen(false)}
-          terrain={selectedTerrain}
+        <TerrainCard 
+          isOpen={isTerrainCardOpen} 
+          onClose={() => setIsTerrainCardOpen(false)} 
+          terrain={selectedTerrain} 
           onTerrainUpdate={handleTerrainUpdate}
+          userRole={userRole}
+        />
+      )}
+
+      {/* Card pour suppression de terrain */}
+      {isTerrainDeleteOpen && selectedTerrain && (
+        <TerrainCard 
+          isOpen={isTerrainDeleteOpen} 
+          onClose={() => setIsTerrainDeleteOpen(false)} 
+          terrain={selectedTerrain} 
+          onTerrainUpdate={handleTerrainUpdate} 
+          isDeleteMode={true}
+          userRole={userRole}
+        />
+      )}
+
+      {/* Dialog pour contact du technicien */}
+      {isMessageDialogOpen && selectedTechnicien && (
+        <MessageDialog
+          isOpen={isMessageDialogOpen}
+          onClose={() => setIsMessageDialogOpen(false)}
+          technicien={selectedTechnicien}
         />
       )}
     </View>

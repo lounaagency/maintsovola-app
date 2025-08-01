@@ -142,7 +142,6 @@ const TerrainTable: React.FC<TerrainTableProps> = ({
               <Text style={styles.smallText}> Proposé: {item.surface_proposee} ha</Text>
             )}
           </View>
-
           {type === 'pending' && userRole === 'superviseur' && (
             <View style={[styles.technicien]}>
               {item.id_technicien ? (
@@ -222,6 +221,14 @@ const TerrainTable: React.FC<TerrainTableProps> = ({
                   title={<MaterialCommunityIcons name="check-circle-outline" size={20} />}
                 />
               )}
+            {onContactTechnicien && (
+              <Button
+                variant="ghost"
+                size="icon"
+                onPress={() => onContactTechnicien(item)}
+                title={<MaterialCommunityIcons name="message-outline" size={20} />}
+              />
+            )}
           </View>
         </View>
       </TouchableOpacity>

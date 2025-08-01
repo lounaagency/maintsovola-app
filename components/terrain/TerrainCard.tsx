@@ -11,7 +11,7 @@ import {
   FlatList,
   Dimensions,
 } from 'react-native';
-import { Polygon, UrlTile } from 'react-native-maps';
+import { Polygon } from 'react-native-maps';
 import MapView from 'react-native-maps';
 import { Button } from 'components/terrain/button';
 import { TerrainData } from '../../types/Terrain';
@@ -103,6 +103,26 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
     return [];
   };
 
+  // Get center coordinates for map initialization
+  const getMapCenter = () => {
+    const coordinates = getPolygonCoordinates();
+    if (coordinates.length > 0) {
+      const center = coordinates.reduce(
+        (acc: { latitude: number; longitude: number }, coord: { latitude: number; longitude: number }) => ({
+          latitude: acc.latitude + coord.latitude,
+          longitude: acc.longitude + coord.longitude,
+        }),
+        { latitude: 0, longitude: 0 }
+      );
+      return {
+        latitude: center.latitude / coordinates.length,
+        longitude: center.longitude / coordinates.length,
+      };
+    }
+    // Fallback coordinates (Madagascar center)
+    return { latitude: -18.7669, longitude: 46.8691 };
+  };
+
   const polygonCoordinates = getPolygonCoordinates();
 
   // FONCTION CORRIGÉE pour récupérer les photos
@@ -192,6 +212,7 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
   };
 
   if (isDeleteMode) {
+    console.log('🔍 Suppression du terrain:', terrain.nom_terrain);
     return (
       <AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
         <AlertDialogContent>
@@ -325,23 +346,19 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
                     </View>
                   </View>
                 </View>
-{/*MANOMBOKA ETO ********************************************* map*/}
+                {/* SECTION CARTE */}
                 <View style={styles.mapPhotoContainer}>
                   <View style={styles.mapContainer}>
                     {polygonCoordinates.length > 0 ? (
                       <MapView
                         style={styles.map}
                         initialRegion={{
-                          latitude: polygonCoordinates[0].latitude,
-                          longitude: polygonCoordinates[0].longitude,
+                          ...getMapCenter(),
                           latitudeDelta: 0.01,
                           longitudeDelta: 0.01,
                         }}>
-                        <UrlTile
-                          urlTemplate="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-                          maximumZ={19}
-                          tileSize={256}
-                        />
+                        {/* Note: UrlTile n'est pas disponible sur toutes les plateformes */}
+                        {/* Utilisation de la carte par défaut */}
                         <Polygon
                           coordinates={polygonCoordinates}
                           strokeColor="red"
@@ -355,7 +372,7 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
                       </View>
                     )}
                   </View>
-{/*mIAFARANA ETO ********************************************* map/}
+                </View>
                   {/* SECTION PHOTOS CORRIGÉE */}
                   {/*(
                     <View style={styles.card}>
@@ -378,18 +395,11 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
                                 resizeMode="cover"
                                 onError={(error) => console.log('❌ Erreur photo preview:', error)}
                               />
-                            </View>
-                          ))}
-                          {photos.length > 3 && (
-                            <View style={styles.photoMore}>
-                              <Text style={styles.photoMoreText}>+{photos.length - 3}</Text>
-                            </View>
-                          )}
-                        </View>
-                      </View>
-                    </View>
-                  )*/}
-                </View>
+                          
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+                  )
+                </View> */}
               </View>
             ) : (
               <View style={styles.validationContainer}>
@@ -486,18 +496,19 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
           </ScrollView>
 
           <View style={styles.footer}>
-            {/*canDelete && (
-              <Button
-                variant="destructive"
-                onPress={() => setIsDeleteConfirmOpen(true)}
-                icon={<Trash2 size={16} color="white" />}
+            {canDelete && (
+              <Button 
+                variant="destructive" 
+                onPress={() => setIsDeleteConfirmOpen(true)} 
+                style={{ flex: 1, marginRight: 8 }} 
+                title="Supprimer"
               />
-            )*/}
-            <Button variant="outline"  onPress={onClose} style={{ flex: 1 }} title="Fermer"/>
+            )}
+            <Button variant="outline" onPress={onClose} style={{ flex: 1 }} title="Fermer"/>
           </View>
         </View>
       </Modal>
-            
+
       {/* Delete confirmation */}
       <AlertDialog open={isDeleteConfirmOpen} onOpenChange={setIsDeleteConfirmOpen}>
         <AlertDialogContent>
@@ -522,7 +533,7 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* GALERIES PHOTOS CORRIGÉES */}
+      {/* GALERIES PHOTOS - TEMPORAIREMENT DÉSACTIVÉES */}
       {/* <ProjectPhotosGallery
         isOpen={photoGalleryOpen}
         onClose={() => {
