@@ -181,7 +181,7 @@ const id = '1'; // Remplace par l'ID réel de l'utilisateur (ex: user?.id)
                 </Text>
                 
                 {notification.content && (
-                  <Text style={styles.contentText}>"{notification.content}"</Text>
+                  <Text style={styles.contentText}>{notification.content}</Text>
                 )}
                 
                 <Text style={styles.timeText}>{notification.time}</Text>
