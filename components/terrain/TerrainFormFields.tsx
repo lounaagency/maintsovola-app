@@ -17,6 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/integrations/supabase/client';
 import { useFormContext } from 'react-hook-form';
 import RNPickerSelect from 'react-native-picker-select';
+import TerrainMap from './TerrainMap';
 
 interface Region {
   id_region: number;
@@ -278,7 +279,7 @@ const TerrainFormFields: React.FC<TerrainFormFieldsProps> = ({
             checked={form.watch('acces_eau')}
             onValueChange={(value) => form.setValue('acces_eau', value)}
           />
-          <Text style={styles.checkboxLabel}>Accès à l'eau</Text>
+          <Text style={styles.checkboxLabel}>Accès à l`eau</Text>
         </View>
 
         <View style={styles.checkboxField}>
@@ -311,6 +312,9 @@ const TerrainFormFields: React.FC<TerrainFormFieldsProps> = ({
             ))}
           </ScrollView>
         )}
+      </View>
+      <View style={styles.field}>
+        <TerrainMap />
       </View>
     </ScrollView>
   );
@@ -386,6 +390,22 @@ const styles = StyleSheet.create({
     height: 24,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  mapContainer: {
+    height: 300,
+    width: '100%',
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#ccc',
+  },
+  map: {
+    flex: 1,
+  },
+  helper: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 8,
   },
 });
 
