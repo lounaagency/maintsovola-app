@@ -1,5 +1,6 @@
 import { supabase } from "~/lib/data";
 import { Conversation, Message, Utilisateur } from "~/type/messageInterface";
+import * as FileSystem from 'expo-file-system';
 import { decode } from 'base64-arraybuffer';
 
 export async function getConversation({ id_user }: { id_user: string }): Promise<Conversation[]> {
@@ -14,7 +15,6 @@ export async function getConversation({ id_user }: { id_user: string }): Promise
             throw new Error(`Failed to get conversation: ${error.message}`);
         }
         
-        // Retourner un tableau vide au lieu de lancer une erreur si aucune conversation
         if (!data || data.length === 0) {
             return [];
         }
@@ -46,7 +46,6 @@ export async function getMessages({ id_conversation }: { id_conversation: number
             throw new Error(`Failed to get messages: ${error.message}`);
         }
         
-        // Retourner un tableau vide au lieu de lancer une erreur si aucun message
         if (!data || data.length === 0) {
             return [];
         }
@@ -67,75 +66,24 @@ export async function getMessages({ id_conversation }: { id_conversation: number
         console.log("Fetched messages:", JSON.stringify(messages,null,2));
 
         return messages;
-
     } catch (error) {
         console.error("Error fetching messages:", error);
         throw error;
     }
 }
 
-// export async function sendMessage({
-//     id_conversation,
-//     id_expediteur,
-//     id_destinataire,
-//     contenu
-// }: {
-//     id_conversation: number;
-//     id_expediteur: string;
-//     id_destinataire: string;
-//     contenu: string;
-// }): Promise<Message> {
-//     try {
-//         const currentTime = new Date().toISOString();
-        
-//         // Insérer le message
-//         const { data, error } = await supabase
-//         .from("message")
-//         .insert({
-//             id_conversation,
-//             id_expediteur,
-//             id_destinataire,
-//             contenu,
-//             date_envoi: currentTime,
-//             lu: false
-//         })
-//         .select("*")
-//         .single();
-
-//         if (error) {
-//             throw new Error(`Failed to send message: ${error.message}`);
-//         }
-        
-//         if (!data) {
-//             throw new Error("No message data returned.");
-//         }
-
-//         // Mettre à jour la dernière activité de la conversation
-//       await supabase
-//         .from("conversation")
-//         .update({ derniere_activite: currentTime })
-//         .eq("id_conversation", id_conversation);
-
-//         const message: Message = {
-//             id_message: data.id_message,
-//             id_conversation: data.id_conversation,
-//             id_expediteur: data.id_expediteur,
-//             id_destinataire: data.id_destinataire,
-//             contenu: data.contenu,
-//             date_envoi: data.date_envoi,
-//             lu: data.lu,
-//             created_at: data.created_at,
-//             modified_at: data.modified_at,
-//             pieces_jointes: data.pieces_jointes || [],
-//         };
-
-//         return message;
-
-//     } catch (error) {
-//         console.error("Error sending message:", error);
-//         throw error;
-//     }
-// }
+export async function getLastMessage(conversationId: number): Promise<string> {
+  try {
+    const messages = await getMessages({ id_conversation: conversationId });
+    if (messages.length > 0) {
+      return messages[0].contenu;
+    }
+    return '';
+  } catch (error) {
+    console.error("Error getting last message:", error);
+    return 'Erreur de chargement';
+  }
+}
 
 export async function getUsername({ id }: { id: string }): Promise<string> {
   try {
@@ -156,6 +104,34 @@ export async function getUsername({ id }: { id: string }): Promise<string> {
     }
 
     return `${data.nom} ${data.prenoms}`;
+  } catch (err) {
+    console.error('❌ getUsername failed:', err);
+    throw err;
+  }
+}
+
+export async function getUser({ id }: { id: string }): Promise<{username: string, photo_profil: string}> {
+  try {
+    const { data, error } = await supabase
+      .from('utilisateur')
+      .select('nom, prenoms, email, photo_profil')
+      .eq('id_utilisateur', id)
+      .single();
+
+    if (error) {
+      console.error(`❌ Supabase error in getUsername():`, error.message);
+      throw new Error(`Failed to get username: ${error.message}`);
+    }
+
+    if (!data) {
+      console.warn(`⚠️ No user found for id_utilisateur: ${id}`);
+      throw new Error('No user found.');
+    }
+
+    return {
+      username:`${data.nom} ${data.prenoms}`,
+      photo_profil: `${data?.photo_profil || ""}` 
+    };
   } catch (err) {
     console.error('❌ getUsername failed:', err);
     throw err;
@@ -206,7 +182,7 @@ export async function getAllUsers({currentUserId}: {currentUserId: string}): Pro
         }
 
         if (!data || data.length === 0) {
-            return []; // Retourner un tableau vide au lieu de lancer une erreur
+            return [];
         }
 
         const utilisateurs: Utilisateur[] = data.map((item: any) => ({
@@ -231,24 +207,21 @@ export async function setNewConversation({
     otherUserId: string;
 }): Promise<number> {
     try {
-        // Vérifier si une conversation existe déjà entre ces deux utilisateurs
         const { data: existingConv, error: checkError } = await supabase
         .from("conversation")
         .select("id_conversation")
         .or(`and(id_utilisateur1.eq.${currentUserId},id_utilisateur2.eq.${otherUserId}),and(id_utilisateur1.eq.${otherUserId},id_utilisateur2.eq.${currentUserId})`)
         .maybeSingle();
 
-        if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = pas de résultat trouvé
+        if (checkError && checkError.code !== 'PGRST116') {
             throw new Error(`Failed to check existing conversation: ${checkError.message}`);
         }
 
-        // Si une conversation existe déjà, retourner son ID
         if (existingConv) {
             console.log("Conversation exists, returning ID:", existingConv.id_conversation);
             return existingConv.id_conversation;
         }
 
-        // Créer une nouvelle conversation
         const currentTime = new Date().toISOString();
         const { data, error } = await supabase
         .from("conversation")
@@ -278,7 +251,6 @@ export async function setNewConversation({
     }
 }
 
-// 🔁 S'abonner aux nouveaux messages d'une conversation
 export function subscribeToMessages(
     id_conversation: number,
     callback: (message: Message) => void
@@ -299,10 +271,9 @@ export function subscribeToMessages(
         }
       )
       .subscribe();
-  }
-  
-  // 🔁 S'abonner aux nouvelles conversations de l'utilisateur
-  export function subscribeToConversations(
+}
+
+export function subscribeToConversations(
     userId: string,
     callback: (conversation: Conversation) => void
   ) {
@@ -323,27 +294,78 @@ export function subscribeToMessages(
         }
       )
       .subscribe();
+}
+
+export async function uploadFile(uri: string, fileName: string, contentType: string, retries: number = 3): Promise<string> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      // Validate URI
+      if (!uri) {
+        throw new Error('Invalid file URI');
+      }
+
+      // Copy file to cache directory to ensure accessibility
+      let fileUri = uri;
+      if (uri.startsWith('content://')) {
+        const fileExt = fileName.split('.').pop();
+        const cacheUri = `${FileSystem.cacheDirectory}${Date.now()}.${fileExt}`;
+        await FileSystem.copyAsync({
+          from: uri,
+          to: cacheUri,
+        });
+        fileUri = cacheUri;
+        console.log(`Copied file to cache: ${fileUri}`);
+      }
+
+      // Check if file exists
+      const fileInfo = await FileSystem.getInfoAsync(fileUri);
+      if (!fileInfo.exists) {
+        throw new Error(`File does not exist at URI: ${fileUri}`);
+      }
+
+      // Read file as binary data
+      const fileContent = await FileSystem.readAsStringAsync(fileUri, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      const buffer = decode(fileContent); // Convert base64 to ArrayBuffer
+
+      // Upload to Supabase storage
+      const { data, error } = await supabase.storage
+        .from('pieces_jointes')
+        .upload(fileName, buffer, {
+          contentType,
+          upsert: true,
+        });
+
+      if (error) {
+        throw new Error(`Supabase storage error: ${error.message}`);
+      }
+
+      // Get public URL
+      const { data: publicUrlData } = supabase.storage
+        .from('pieces_jointes')
+        .getPublicUrl(fileName);
+
+      if (!publicUrlData?.publicUrl) {
+        throw new Error('Failed to retrieve public URL');
+      }
+
+      console.log(`File uploaded successfully: ${publicUrlData.publicUrl}`);
+      // Clean up cached file
+      if (fileUri !== uri) {
+        await FileSystem.deleteAsync(fileUri, { idempotent: true });
+      }
+      return publicUrlData.publicUrl;
+    } catch (error: any) {
+      console.error(`Upload attempt ${attempt} failed for ${fileName}:`, error.message);
+      if (attempt === retries) {
+        throw new Error(`Failed to upload file after ${retries} attempts: ${error.message}`);
+      }
+      // Wait before retrying
+      await new Promise((resolve) => setTimeout(resolve, 1000 * attempt));
+    }
   }
-  
-
-export async function uploadFile(uri: string, fileName: string, contentType: string) {
-  const response = await fetch(uri);
-  const blob = await response.blob();
-
-  const { data, error } = await supabase.storage
-    .from('pieces_jointes')
-    .upload(fileName, blob, {
-      contentType,
-      upsert: true,
-    });
-
-  if (error) throw error;
-
-  const { data: publicUrlData } = supabase.storage
-    .from('pieces_jointes')
-    .getPublicUrl(fileName);
-
-  return publicUrlData.publicUrl;
+  throw new Error('Unexpected error in uploadFile');
 }
 
 export async function sendMessage({
@@ -359,21 +381,33 @@ export async function sendMessage({
   contenu: string;
   files?: string[];
 }): Promise<Message> {
-  const { data, error } = await supabase
-    .from('message')
-    .insert({
-      id_conversation,
-      id_expediteur,
-      id_destinataire,
-      contenu,
-      date_envoi: new Date().toISOString(),
-      lu: false,
-      pieces_jointes: files,
-    })
-    .select('*')
-    .single();
+  const messageData: any = {
+    id_conversation,
+    id_expediteur,
+    id_destinataire,
+    contenu,
+    date_envoi: new Date().toISOString(),
+    lu: false,
+  };
 
-  if (error) throw new Error(error.message);
+  if (files.length > 0) {
+    messageData.pieces_jointes = files;
+  }
 
-  return data as Message;
+  try {
+    const { data, error } = await supabase
+      .from('message')
+      .insert(messageData)
+      .select('*')
+      .single();
+
+    if (error) {
+      throw new Error(`Supabase insert error: ${error.message}`);
+    }
+
+    return data as Message;
+  } catch (error: any) {
+    console.error('Failed to send message:', error);
+    throw error;
+  }
 }

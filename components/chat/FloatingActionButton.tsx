@@ -20,7 +20,7 @@ const FloatingActionButton: React.FC<FloatingActionButtonProps> = ({
         onPress={onPress}
         activeOpacity={0.8}
         style={{
-          backgroundColor: '#25D366', 
+          backgroundColor: '#16a34a',
           width: 56,
           height: 56,
           borderRadius: 28,

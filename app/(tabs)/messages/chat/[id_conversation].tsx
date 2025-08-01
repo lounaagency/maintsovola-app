@@ -12,14 +12,15 @@ import {
   StyleSheet,
   Alert,
   Keyboard,
+  Image,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { getConversationById, getMessages, sendMessage, subscribeToMessages } from '~/services/conversation-message-service';
+import { getConversationById, getMessages, sendMessage, subscribeToMessages, uploadFile } from '~/services/conversation-message-service';
 import { Conversation, Message, Utilisateur } from '~/type/messageInterface';
 import { useAuth } from '~/contexts/AuthContext';
 import { LucideArrowBigLeft } from 'lucide-react-native';
 import { supabase } from '~/lib/data';
-import MyImagePicker from '~/utils/picker';
+import * as DocumentPicker from 'expo-document-picker';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 const ChatScreen = () => {
@@ -35,6 +36,7 @@ const ChatScreen = () => {
   const [receiverId, setReceiverId] = useState<string>('');
   const [convValid, setConvValid] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [selectedFiles, setSelectedFiles] = useState<DocumentPicker.DocumentPickerAsset[]>([]);
 
   const fetchMessages = useCallback(async () => {
     if (!parsedConvId || isNaN(parsedConvId)) {
@@ -99,9 +101,29 @@ const ChatScreen = () => {
     };
   }, [parsedConvId]);
 
+  const handleFilePick = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ['image/*', 'audio/*', 'application/*'],
+        multiple: true,
+      });
+      if (!result.canceled && result.assets) {
+        setSelectedFiles((prev) => [...prev, ...result.assets]);
+      }
+    } catch (err) {
+      console.error('Erreur lors de la sélection du fichier:', err);
+      setError('Erreur lors de la sélection du fichier. Veuillez réessayer.');
+    }
+  };
+
   const handleSend = async (): Promise<void> => {
-    if (!input.trim() || !user?.id || !receiverId) {
-      console.warn('Missing input, user, or receiverId');
+    if (!input.trim() && selectedFiles.length === 0) {
+      console.warn('Aucun contenu ou fichier à envoyer');
+      return;
+    }
+
+    if (!user?.id || !receiverId) {
+      console.warn('Missing user or receiverId');
       return;
     }
 
@@ -115,29 +137,70 @@ const ChatScreen = () => {
       lu: false,
       created_at: new Date().toISOString(),
       modified_at: new Date().toISOString(),
+      pieces_jointes: selectedFiles.map((file) => file.uri || ''),
     };
 
     setMessages((prev) => [...prev, tempMessage]);
     const inputToSend = input.trim();
     setInput('');
+    const filesToSend = [...selectedFiles];
+    setSelectedFiles([]);
 
     try {
+      let uploadedFiles: string[] = [];
+      if (filesToSend.length > 0) {
+        uploadedFiles = await Promise.all(
+          filesToSend.map(async (file, index) => {
+            try {
+              const fileExt = file.name.split('.').pop();
+              const fileName = `${user.id}/${Date.now()}-${index}.${fileExt}`;
+              return await uploadFile(file.uri, fileName, file.mimeType || 'application/octet-stream');
+            } catch (uploadErr) {
+              console.error(`Failed to upload file ${file.name}:`, uploadErr);
+              return ''; // Skip failed uploads
+            }
+          })
+        );
+      }
+
+      const validFiles = uploadedFiles.filter((url) => url !== '');
+
       await sendMessage({
         id_conversation: parsedConvId,
         id_expediteur: user.id,
         id_destinataire: receiverId,
         contenu: inputToSend,
+        files: validFiles,
       });
 
       setMessages((prev) => prev.filter((msg) => msg.id_message !== tempMessage.id_message));
-    } catch (err) {
+    } catch (err: any) {
       console.error('Erreur envoi message:', err);
-      setMessages((prev) => prev.filter((msg) => msg.id_message !== tempMessage.id_message));
-      setError('Erreur lors de l’envoi du message. Veuillez réessayer.');
+      let errorMessage = 'Erreur lors de l’envoi du message. Veuillez vérifier votre connexion et réessayer.';
+      if (err.message.includes('Network request failed')) {
+        errorMessage = 'Problème de connexion réseau. Veuillez vérifier votre connexion Internet.';
+      } else if (err.message.includes('Failed to upload file')) {
+        errorMessage = 'Échec de l’envoi des fichiers joints. Le message texte a été envoyé.';
+      }
+      setError(errorMessage);
+      // If files failed but text exists, attempt to send text-only message
+      if (inputToSend) {
+        try {
+          await sendMessage({
+            id_conversation: parsedConvId,
+            id_expediteur: user.id,
+            id_destinataire: receiverId,
+            contenu: inputToSend,
+            files: [],
+          });
+          setMessages((prev) => prev.filter((msg) => msg.id_message !== tempMessage.id_message));
+        } catch (textErr) {
+          console.error('Failed to send text-only message:', textErr);
+        }
+      }
     }
   };
 
-  // Scroll to the latest message when keyboard opens or new messages arrive
   useEffect(() => {
     const keyboardDidShow = Keyboard.addListener('keyboardDidShow', () => {
       flatListRef.current?.scrollToEnd({ animated: true });
@@ -159,9 +222,34 @@ const ChatScreen = () => {
             { backgroundColor: isCurrentUser ? '#25D366' : '#F0F0F0' },
           ]}
         >
-          <Text style={[styles.messageText, { color: isCurrentUser ? 'white' : '#000' }]}>
-            {item.contenu}
-          </Text>
+          {item.contenu && (
+            <Text style={[styles.messageText, { color: isCurrentUser ? 'white' : '#000' }]}>
+              {item.contenu}
+            </Text>
+          )}
+          {item.pieces_jointes && item.pieces_jointes.length > 0 && (
+            <View style={styles.attachmentContainer}>
+              {item.pieces_jointes.map((uri, index) => {
+                const isImage = uri.match(/\.(jpg|jpeg|png|gif)$/i);
+                const isAudio = uri.match(/\.(mp3|wav|ogg)$/i);
+                return (
+                  <View key={index} style={styles.attachmentItem}>
+                    {isImage ? (
+                      <Image source={{ uri }} style={styles.attachmentImage} />
+                    ) : isAudio ? (
+                      <Text style={[styles.attachmentText, { color: isCurrentUser ? 'white' : '#000' }]}>
+                        Audio file
+                      </Text>
+                    ) : (
+                      <Text style={[styles.attachmentText, { color: isCurrentUser ? 'white' : '#000' }]}>
+                        File: {uri.split('/').pop()}
+                      </Text>
+                    )}
+                  </View>
+                );
+              })}
+            </View>
+          )}
           <View style={styles.messageFooter}>
             <Text style={[styles.messageTime, { color: isCurrentUser ? 'rgba(255,255,255,0.7)' : '#8E8E93' }]}>
               {new Date(item.date_envoi).toLocaleTimeString('fr-FR', {
@@ -190,7 +278,14 @@ const ChatScreen = () => {
   }
 
   if (error) {
-    Alert.alert('Erreur', error, [{ text: 'OK', onPress: () => setError(null) }]);
+    Alert.alert('Erreur', error, [
+      { text: 'OK', onPress: () => setError(null) },
+      {
+        text: 'Réessayer',
+        onPress: () => handleSend(),
+        style: 'default',
+      },
+    ]);
   }
 
   return (
@@ -209,7 +304,7 @@ const ChatScreen = () => {
       <KeyboardAvoidingView
         style={styles.keyboardAvoidingView}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        keyboardVerticalOffset={insets.top + 60} // Adjust for header height (~60px)
+        keyboardVerticalOffset={insets.top + 60}
       >
         {/* Messages List */}
         <FlatList
@@ -245,13 +340,13 @@ const ChatScreen = () => {
               maxLength={1000}
             />
           </View>
-          <View style={styles.attachmentButton}>
-            <MyImagePicker />
-          </View>
+          <TouchableOpacity onPress={handleFilePick} style={styles.attachmentButton}>
+            <Text style={styles.attachmentButtonText}>📎</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={handleSend}
-            disabled={!input.trim()}
-            style={[styles.sendButton, { backgroundColor: input.trim() ? '#25D366' : '#BDC3C7' }]}
+            disabled={!input.trim() && selectedFiles.length === 0}
+            style={[styles.sendButton, { backgroundColor: input.trim() || selectedFiles.length > 0 ? '#25D366' : '#BDC3C7' }]}
           >
             <Text style={styles.sendButtonText}>↗</Text>
           </TouchableOpacity>
@@ -298,6 +393,10 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   messageText: { fontSize: 16, lineHeight: 20 },
+  attachmentContainer: { marginTop: 8 },
+  attachmentItem: { marginBottom: 8 },
+  attachmentImage: { width: 200, height: 200, borderRadius: 8 },
+  attachmentText: { fontSize: 14, marginTop: 4 },
   messageFooter: { flexDirection: 'row', justifyContent: 'flex-end', alignItems: 'center', marginTop: 4 },
   messageTime: { fontSize: 12, marginRight: 4 },
   messageStatus: { color: 'rgba(255,255,255,0.7)', fontSize: 12 },
@@ -334,7 +433,8 @@ const styles = StyleSheet.create({
     minHeight: 20,
     textAlignVertical: 'center',
   },
-  attachmentButton: { marginRight: 8 },
+  attachmentButton: { marginRight: 8, padding: 8 },
+  attachmentButtonText: { fontSize: 24 },
   sendButton: {
     borderRadius: 25,
     width: 44,

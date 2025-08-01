@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,7 +8,7 @@ import {
 } from 'react-native';
 import { Conversation } from "~/type/messageInterface";
 import { useAuth } from '~/contexts/AuthContext';
-import { getUsername } from '~/services/conversation-message-service'; 
+import { getLastMessage, getUsername, getUser } from '~/services/conversation-message-service'; 
 
 interface RenderConversationProps {
   item: Conversation;
@@ -20,27 +20,37 @@ const RenderConversation: React.FC<RenderConversationProps> = ({ item, onPress }
   const userId = user?.id ?? '';
   const otherUserId = item.id_utilisateur1 === userId ? item.id_utilisateur2 : item.id_utilisateur1;
   const [otherUsername, setOtherUsername] = useState<string>('Utilisateur');
+  const [lastMesage, setLastMessage] = useState<string>();
+  const [photoProfil, setPhotoProfil] = useState<string>();
 
   useEffect(() => {
     const fetchUsername = async () => {
-      const username = await getUsername({ id: otherUserId });
+      // const username = await getUsername({ id: otherUserId });
+      const { username, photo_profil} = await getUser({id: otherUserId});
+
       // Nettoyer le nom d'utilisateur en retirant les "null" et espaces supplémentaires
+
       const cleanedUsername = username 
         ? username.replace(/\bnull\b/gi, '').trim().replace(/\s+/g, ' ')
         : 'Utilisateur';
       
+      setPhotoProfil(photo_profil);
       setOtherUsername(cleanedUsername || 'Utilisateur');
       console.log("Fetched username:", JSON.stringify(username, null, 2));
       if (!username) {
         console.warn("Username not found for user ID:", otherUserId);
       }
     };
+    
 
     fetchUsername();
   }, [otherUserId]);
 
+  
+
+
   // Fonction pour formater le temps comme WhatsApp
-  const formatTime = (dateString: string) => {
+  const formatTime = (dateString: string) =>   {
     const date = new Date(dateString);
     const now = new Date();
     const diffInHours = Math.abs(now.getTime() - date.getTime()) / (1000 * 60 * 60);
@@ -66,15 +76,21 @@ const RenderConversation: React.FC<RenderConversationProps> = ({ item, onPress }
     }
   };
 
-  // Générer les initiales pour l'avatar
-  const getInitials = (name: string) => {
-    const cleanName = name.replace(/\bnull\b/gi, '').trim();
-    const names = cleanName.split(' ').filter(n => n.length > 0);
-    if (names.length >= 2) {
-      return (names[0][0] + names[1][0]).toUpperCase();
-    }
-    return cleanName.slice(0, 2).toUpperCase() || 'U';
-  };
+  const loadLastMessage = useCallback(async () => {
+    try {
+      const ms = await getLastMessage(item.id_conversation);
+      console.log("Last message loaded:", ms);
+      setLastMessage(ms);
+      
+    } catch (error) {
+      console.error("Error loading last message:", error);
+      return '';
+    } 
+  }, [item.id_conversation]);
+  
+  useEffect(()=> {
+    loadLastMessage();
+  }, [])
 
   // Couleurs d'avatar aléatoires pour chaque utilisateur
   const getAvatarColor = (userId: string) => {
@@ -103,7 +119,7 @@ const RenderConversation: React.FC<RenderConversationProps> = ({ item, onPress }
           {/* Avatar avec nom nettoyé */}
           <Image
             source={{ 
-              uri: `https://ui-avatars.com/api/?name=${encodeURIComponent(otherUsername)}&background=${getAvatarColor(otherUserId).substring(1)}&color=fff&size=56&font-size=0.6&rounded=true&bold=true` 
+              uri: `${photoProfil !== '' ? photoProfil : `https://ui-avatars.com/api/?name=${encodeURIComponent(otherUsername)}&background=${getAvatarColor(otherUserId).substring(1)}&color=fff&size=56&font-size=0.6&rounded=true&bold=true`}` 
             }}
             className="w-full h-full"
             style={{ borderRadius: 28 }}
@@ -114,7 +130,7 @@ const RenderConversation: React.FC<RenderConversationProps> = ({ item, onPress }
           />
         </View>
         
-        {/* Indicateur en ligne (optionnel) */}
+        {/* Indicateur en ligne*/}
         <View 
           className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-white"
           style={{ display: 'none' }} // Masqué pour l'instant
@@ -125,6 +141,7 @@ const RenderConversation: React.FC<RenderConversationProps> = ({ item, onPress }
       <View className="flex-1 justify-center">
         {/* Ligne supérieure : Nom + Heure */}
         <View className="flex-row items-center justify-between mb-1">
+          {/* Nom  */}
           <Text 
             className="text-gray-900 font-medium text-base flex-1"
             numberOfLines={1}
@@ -133,6 +150,7 @@ const RenderConversation: React.FC<RenderConversationProps> = ({ item, onPress }
             {otherUsername}
           </Text>
           
+          {/* Heure de la dernière activité */}
           <Text 
             className="text-gray-500 text-xs ml-2"
             style={{ fontSize: 12, color: '#8E8E93' }}
@@ -148,11 +166,11 @@ const RenderConversation: React.FC<RenderConversationProps> = ({ item, onPress }
             numberOfLines={1}
             style={{ fontSize: 14, color: '#8E8E93' }}
           >
-            Touchez pour ouvrir la conversation
+            {lastMesage} 
           </Text>
           
           {/* Badge de messages non lus (optionnel) */}
-          <View 
+          {/* <View 
             className="bg-green-500 rounded-full px-2 py-1 ml-2"
             style={{ 
               backgroundColor: '#25D366',
@@ -160,26 +178,27 @@ const RenderConversation: React.FC<RenderConversationProps> = ({ item, onPress }
               height: 20,
               justifyContent: 'center',
               alignItems: 'center',
-              display: 'none' // Masqué pour l'instant
+              display: 'flex' // Masqué pour l'instant
             }}
           >
             <Text className="text-white text-xs font-medium" style={{ fontSize: 12 }}>
               3
             </Text>
-          </View>
+          </View> */}
         </View>
       </View>
 
       {/* Indicateur de message envoyé/reçu (optionnel) */}
       <View className="ml-2" style={{ display: 'flex' }}>
         {/* Double coche bleue pour les messages lus */}
-        <View className="flex-row">
+        {/* <View className="flex-row">
           <Text style={{ color: '#34B7F1', fontSize: 16 }}>✓</Text>
           <Text style={{ color: '#34B7F1', fontSize: 16, marginLeft: -8 }}>✓</Text>
-        </View>
+        </View> */}
       </View>
     </TouchableOpacity>
   );
 };
 
 export default RenderConversation;
+
