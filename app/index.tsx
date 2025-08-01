@@ -1052,10 +1052,8 @@ const HomeScreen: React.FC = () => {
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.finalCtaButtonSecondary}
-                onPress={() => {
-                  /* Afficher les landing pages */
-                }}>
-                <Text style={styles.finalCtaButtonTextSecondary}>En savoir plus</Text>
+                onPress={() => router.navigate('/(auth)/login')}>
+                <Text style={styles.finalCtaButtonTextSecondary}>Se connecter</Text>
               </TouchableOpacity>
             </View>
           </Animated.View>
