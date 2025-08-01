@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -23,18 +22,6 @@ interface User {
   adresse: string
 }
 
-interface SiteUtilisateur {
-  id_site_utilisateur: string
-  email: string
-  nom: string
-  prenom: string
-  id_role: number
-  statut: string
-  derniere_connection: Date
-  create_at: Date
-  update_at: Date
-}
-
 interface Notification {
   id: string
   type: string
@@ -48,15 +35,16 @@ interface Notification {
 }
 
 import { supabase } from '~/lib/data';
+import { useAuth } from '~/contexts/AuthContext';
 
 export default function NotifScreen() {
-  const [currentUserId, setCurrentUserId] = useState<string>("")
-  const [currentUser, setCurrentUser] = useState<User | null>(null)
-  const [currentSiteUser, setCurrentSiteUser] = useState<SiteUtilisateur | null>(null)
+  const [currentUser, setCurrentUser] = useState<User>()
   const [users, setUsers] = useState<User[]>([])
-  const [siteUtilisateurs, setSiteUtilisateurs] = useState<SiteUtilisateur[]>([])
   const [loading, setLoading] = useState(true)
   const [notifications, setNotifications] = useState<Notification[]>([])
+
+  const { user } = useAuth();
+  const currentUserId = user?.id || null;
 
   const markAsRead = async (id: string | number) => {
     // Mettre à jour l'état local immédiatement
@@ -76,37 +64,6 @@ export default function NotifScreen() {
       console.error('Erreur lors de la mise à jour de la notification:', error);
     }
   };
-  
-  const fetchSiteUtilisateurs = async () => {
-    try {
-      const { data, error } = await supabase.from("utilisateur").select("*")
-
-      if (error) {
-        console.error("Erreur lors de la récupération des utilisateurs du site:", error)
-        return
-      }
-
-      const formattedData: SiteUtilisateur[] = (data || []).map((item: any) => ({
-        id_site_utilisateur: item.id_site_utilisateur,
-        email: item.email,
-        nom: item.nom,
-        prenom: item.prenom,
-        id_role: item.id_role,
-        statut: item.statut,
-        derniere_connection: new Date(item.derniere_connection),
-        create_at: new Date(item.create_at),
-        update_at: new Date(item.update_at),
-      }))
-
-      setSiteUtilisateurs(formattedData)
-      console.log("Utilisateurs du site récupérés:", formattedData.length)
-      
-      return formattedData
-    } catch (error) {
-      console.error("Erreur fetchSiteUtilisateurs:", error)
-      return []
-    }
-  }
 
   const fetchUsers = async () => {
     try {
@@ -145,7 +102,9 @@ export default function NotifScreen() {
       console.log("Pas d'ID utilisateur pour récupérer les notifications")
       return
     }
-    console.log("voici l'id actuel",userId);
+    
+    console.log("Récupération des notifications pour l'utilisateur:", userId);
+    
     try {
       const { data, error } = await supabase
         .from('notification')
@@ -165,40 +124,27 @@ export default function NotifScreen() {
         return
       }
 
+      console.log('Notifications récupérées:', data?.length || 0);
+
       // Récupérer les informations des expéditeurs
       const expediteurIds = [...new Set((data || []).map(n => n.id_expediteur).filter(Boolean))]
       
       let expediteursInfo: { [key: string]: { nom: string, prenom: string, photo_profil?: string } } = {}
       
       if (expediteurIds.length > 0) {
-        // D'abord chercher dans site_utilisateur
-        const { data: siteUsersData } = await supabase
+        const { data: usersData } = await supabase
           .from('utilisateur')
-          .select('id_utilisateur, nom, prenoms,photo_profil')
+          .select('id_utilisateur, nom, prenoms, photo_profil')
           .in('id_utilisateur', expediteurIds)
 
-        if (siteUsersData) {
-          siteUsersData.forEach(user => {
+        if (usersData) {
+          usersData.forEach(user => {
             expediteursInfo[user.id_utilisateur] = {
               nom: user.nom || 'Utilisateur',
               prenom: user.prenoms || '',
               photo_profil: user.photo_profil || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(`${user.prenoms} ${user.nom}`)
             }
           })
-        }
-
-        const { data: distinctRoles, error: distinctError } = await supabase
-          .from('utilisateur_par_role')
-          .select('nom_role');
-     
-        if (distinctError) {
-          console.error('Erreur:', distinctError);
-        } else {
-          // Filtrer les doublons
-          const unique = distinctRoles?.filter((role, index, self) => 
-            index === self.findIndex(r => r.nom_role === role.nom_role)
-          );
-          console.log("Rôles distincts:", unique);
         }
       }
 
@@ -223,7 +169,6 @@ export default function NotifScreen() {
       });
 
       console.log('Notifications formatées:', formatted.length)
-     
       setNotifications(formatted);
     } catch (error) {
       console.error('Erreur lors de la récupération des notifications:', error)
@@ -242,34 +187,21 @@ export default function NotifScreen() {
       .on(
         'postgres_changes',
         {
-          event: '*', // Écouter tous les événements (INSERT, UPDATE, DELETE)
+          event: '*',
           schema: 'public',
           table: 'notification',
-          filter: `id_destinataire=eq.${userId}`, // Filtrer par destinataire
+          filter: `id_destinataire=eq.${userId}`,
         },
         (payload) => {
           console.log('Changement détecté dans les notifications:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            // Nouvelle notification reçue
-            console.log('Nouvelle notification reçue');
-            getNotifications(userId); // Recharger toutes les notifications
-          } else if (payload.eventType === 'UPDATE') {
-            // Notification mise à jour (ex: marquée comme lue)
-            console.log('Notification mise à jour');
-            getNotifications(userId);
-          } else if (payload.eventType === 'DELETE') {
-            // Notification supprimée
-            console.log('Notification supprimée');
-            getNotifications(userId);
-          }
+          getNotifications(userId);
         }
       )
       .subscribe((status) => {
         console.log('Statut de l\'abonnement notifications:', status);
       });
 
-    // Écouter les changements dans la table utilisateur (pour les avatars/noms)
+    // Écouter les changements dans la table utilisateur
     const userSubscription = supabase
       .channel('user_changes')
       .on(
@@ -281,7 +213,6 @@ export default function NotifScreen() {
         },
         (payload) => {
           console.log('Changement détecté dans les utilisateurs:', payload);
-          // Recharger les notifications pour mettre à jour les infos utilisateurs
           getNotifications(userId);
         }
       )
@@ -298,84 +229,58 @@ export default function NotifScreen() {
   };
 
   const initializeData = async () => {
+    if (!currentUserId) {
+      console.log("Aucun utilisateur connecté via le contexte d'authentification")
+      setLoading(false)
+      return
+    }
+
     setLoading(true)
     try {
-      // 1. Récupérer l'utilisateur authentifié
-      const {
-        data: { user: authUser },
-      } = await supabase.auth.getUser()
+      console.log("Initialisation pour l'utilisateur:", currentUserId)
 
-      if (!authUser) {
-        console.log("Aucun utilisateur authentifié")
-        setLoading(false)
-        return
-      }
-
-      console.log("Utilisateur authentifié:", authUser.email)
-
-      // 2. Chercher l'utilisateur dans site_utilisateur
-      const { data: siteUser, error: siteError } = await supabase
+      // 1. Récupérer l'utilisateur actuel depuis la table utilisateur
+      const { data: userData, error: userError } = await supabase
         .from("utilisateur")
         .select("*")
-        .eq("email", authUser.email)
+        .eq("id_utilisateur", currentUserId)
         .single()
 
-      if (siteError || !siteUser) {
-        console.error("Erreur lors de la récupération de site_utilisateur:", siteError)
-        Alert.alert("Erreur", "Utilisateur non trouvé dans site_utilisateur")
+      if (userError || !userData) {
+        console.error("Erreur lors de la récupération de l'utilisateur:", userError)
+        Alert.alert("Erreur", "Utilisateur non trouvé")
         setLoading(false)
         return
       }
 
-      console.log("Site utilisateur trouvé:", siteUser.id_utilisateur)
+      console.log("Utilisateur trouvé:", userData.nom, userData.prenoms)
 
-      // 3. Définir l'ID utilisateur actuel et les données du site utilisateur
-      const userId = siteUser.id_utilisateur
-      setCurrentUserId(userId)
-      setCurrentSiteUser({
-        id_site_utilisateur: siteUser.id_site_utilisateur,
-        email: siteUser.email,
-        nom: siteUser.nom,
-        prenom: siteUser.prenom,
-        id_role: siteUser.id_role,
-        statut: siteUser.statut,
-        derniere_connection: new Date(siteUser.derniere_connection),
-        create_at: new Date(siteUser.create_at),
-        update_at: new Date(siteUser.update_at),
-      })
-
-      // 4. Mettre à jour la dernière connexion
-      await supabase
-        .from("site_utilisateur")
-        .update({
-          derniere_connection: new Date().toISOString(),
-          update_at: new Date().toISOString(),
-        })
-        .eq("id_site_utilisateur", userId)
-
-      // 5. Récupérer toutes les données en parallèle
-      const [usersData, siteUsersData] = await Promise.all([
-        fetchUsers(),
-        fetchSiteUtilisateurs(),
-      ])
-
-      // 6. Essayer de trouver l'utilisateur correspondant dans la table utilisateur
-      if (usersData && usersData.length > 0) {
-        const userById = usersData.find(u => u.id_utilisateur === userId)
-        if (userById) {
-          setCurrentUser(userById)
-          console.log("Utilisateur trouvé par email:", userById.nom, userById.prenoms)
-        }
+      // 2. Définir l'utilisateur actuel
+      const formattedUser: User = {
+        id_utilisateur: userData.id_utilisateur,
+        nom: userData.nom,
+        email: userData.email,
+        photo_profil: userData.photo_profil,
+        photo_couverture: userData.photo_couverture,
+        created_at: new Date(userData.created_at),
+        prenoms: userData.prenoms,
+        id_role: userData.id_role,
+        bio: userData.bio,
+        adresse: userData.adresse,
       }
 
-      // 7. Récupérer les notifications
-      await getNotifications(userId)
+      setCurrentUser(formattedUser)
 
-      // 8. Configurer l'écoute temps réel
-      const cleanup = setupRealtimeSubscription(userId);
+      // 3. Récupérer tous les utilisateurs
+      await fetchUsers()
+
+      // 4. Récupérer les notifications
+      await getNotifications(currentUserId)
+
+      // 5. Configurer l'écoute temps réel
+      const cleanup = setupRealtimeSubscription(currentUserId)
       
-      // Stocker la fonction de nettoyage pour l'utiliser dans useEffect
-      return cleanup;
+      return cleanup
 
     } catch (error) {
       console.error("Erreur lors de l'initialisation:", error)
@@ -392,7 +297,13 @@ export default function NotifScreen() {
       cleanup = await initializeData();
     };
 
-    init();
+    // Seulement initialiser si on a un utilisateur connecté
+    if (currentUserId) {
+      init();
+    } else {
+      console.log("En attente de l'authentification de l'utilisateur...")
+      setLoading(false)
+    }
 
     // Fonction de nettoyage
     return () => {
@@ -400,7 +311,7 @@ export default function NotifScreen() {
         cleanup();
       }
     };
-  }, [])
+  }, [currentUserId]) // Relancer quand currentUserId change
 
   const markAllAsRead = async () => {
     setNotifications(prev =>
@@ -440,14 +351,31 @@ export default function NotifScreen() {
 
   const unreadCount = notifications.filter(n => !n.isRead).length;
 
+  // Afficher un message si l'utilisateur n'est pas connecté
+  if (!currentUserId) {
+    return (
+      <SafeAreaView className="flex-1 bg-green-50">
+        <View className="flex-1 justify-center items-center px-10">
+          <Text className="text-6xl mb-5 opacity-60">🔐</Text>
+          <Text className="text-xl font-semibold text-green-800 mb-2">
+            Non authentifié
+          </Text>
+          <Text className="text-base text-green-500 text-center">
+            Veuillez vous connecter pour voir vos notifications
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   if (loading) {
     return (
       <SafeAreaView className="flex-1 bg-green-50">
         <View className="flex-1 justify-center items-center px-10">
           <Text className="text-xl font-semibold text-green-800 mb-2">Chargement...</Text>
-          {currentSiteUser && (
+          {currentUser && (
             <Text className="text-base text-green-600">
-              Connexion de {currentSiteUser.prenom} {currentSiteUser.nom}
+              Connexion de {currentUser.prenoms} {currentUser.nom}
             </Text>
           )}
         </View>
@@ -461,9 +389,9 @@ export default function NotifScreen() {
       <View className="flex-row justify-between items-center px-5 py-4 bg-white border-b-2 border-green-300 shadow-sm">
         <View>
           <Text className="text-2xl font-bold text-green-800">Notifications</Text>
-          {currentSiteUser && (
+          {currentUser && (
             <Text className="text-xs text-green-500 mt-0.5">
-              {currentSiteUser.prenom} {currentSiteUser.nom}
+              {currentUser.prenoms} {currentUser.nom}
             </Text>
           )}
         </View>

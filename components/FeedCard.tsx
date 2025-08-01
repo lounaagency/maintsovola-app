@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   StyleSheet,
   View,
@@ -7,14 +7,18 @@ import {
   TouchableOpacity,
   Dimensions,
   Pressable,
+  Linking,
+  Alert,
 } from 'react-native';
 import { Ionicons, Feather, FontAwesome5 } from '@expo/vector-icons';
 import { AgriculturalProject } from '~/hooks/use-project-data';
 import { useProjectInteractions } from '~/hooks/use-project-interactions';
 import CommentsSection from './CommentsSection';
 import FinancialDetailsModal from './FinancialDetailsModal';
+import InvestmentModal from './InvestmentModal';
 import { useAuth } from '~/contexts/AuthContext';
 import { useRouter } from 'expo-router';
+import GaleryDetailModal from './GaleryDetailModal';
 
 interface FeedCardProps {
   project?: AgriculturalProject;
@@ -40,6 +44,11 @@ const FeedCard: React.FC<FeedCardProps> = ({
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
   const [showComments, setShowComments] = useState(false);
   const [showMoreDetails, setShowMoreDetails] = useState(false);
+  const [showShareMenu, setShowShareMenu] = useState(false);
+  const [showInvestModal, setShowInvestModal] = useState(false);
+  const [localCurrentFunding, setLocalCurrentFunding] = useState(project?.currentFunding || 0);
+  const [showGalery, setShowGallery] = useState(false);
+  const [galleryDefaultTab, setGalleryDefaultTab] = useState<'Photos' | 'Carte'>('Photos');
   const { user, profile } = useAuth();
   const userId = user?.id || undefined; // Remplacer par l'ID de l'utilisateur connecté, à récupérer depuis le contexte d'authentification
 
@@ -60,6 +69,13 @@ const FeedCard: React.FC<FeedCardProps> = ({
     userId,
   });
 
+  // Synchroniser l'état local avec les changements du projet
+  useEffect(() => {
+    if (project?.currentFunding !== undefined) {
+      setLocalCurrentFunding(project.currentFunding);
+    }
+  }, [project?.currentFunding]);
+
   if (!project) {
     return null;
   }
@@ -69,8 +85,8 @@ const FeedCard: React.FC<FeedCardProps> = ({
   const displayTitle = project.title || 'Projet agricole';
   const displayDescription = project.description || 'Description non disponible';
   const terrainName = project.location.region || 'Terrain'; // need verification
-  const currentFunding = project.currentFunding || 0;
-  const fundingGap = project.fundingGoal ? project.fundingGoal - currentFunding : 0;
+  const currentFunding = localCurrentFunding;
+  const fundingGap = project.fundingGoal ? project.fundingGoal - localCurrentFunding : 0;
 
   const handlePhotoNavigation = (direction: 'prev' | 'next') => {
     if (direction === 'prev') {
@@ -93,6 +109,83 @@ const FeedCard: React.FC<FeedCardProps> = ({
 
   const handleLike = () => {
     toggleProjectLike();
+  };
+
+  const handleOpenInvestModal = () => {
+    setShowInvestModal(true);
+  };
+
+  const handleInvestmentComplete = (amount: number) => {
+    // Calculer le nouveau financement
+    let newFunding = localCurrentFunding + amount;
+    if (newFunding > project.fundingGoal) {
+      newFunding = project.fundingGoal;
+    }
+
+    // Mettre à jour le financement local
+    setLocalCurrentFunding(newFunding);
+  };
+  const projectId = project.id;
+
+  const projectUrl = `https://maintsovola.com/feed?id_projet=${projectId}`; // Todo : Mbola mila amboarina ny URL
+
+  const shareHandlers = {
+    facebook: async () => {
+      try {
+        const url = `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(projectUrl)}`;
+        await Linking.openURL(url);
+      } catch (error) {
+        Alert.alert('Erreur', "Impossible d'ouvrir Facebook");
+      }
+      setShowShareMenu(false);
+    },
+    whatsapp: async () => {
+      try {
+        const url = `whatsapp://send?text=${encodeURIComponent(projectUrl)}`;
+        await Linking.openURL(url);
+      } catch (error) {
+        Alert.alert('Erreur', "WhatsApp n'est pas installé");
+      }
+      setShowShareMenu(false);
+    },
+    mail: async () => {
+      try {
+        const url = `mailto:?body=${encodeURIComponent(projectUrl)}`;
+        await Linking.openURL(url);
+      } catch (error) {
+        Alert.alert('Erreur', "Impossible d'ouvrir l'application mail");
+      }
+      setShowShareMenu(false);
+    },
+    copyLink: async () => {
+      try {
+        // Pour React Native, on peut utiliser une approche différente selon la plateforme
+        if (typeof navigator !== 'undefined' && navigator.clipboard) {
+          await navigator.clipboard.writeText(projectUrl);
+        } else {
+          // Fallback pour les environnements où clipboard n'est pas disponible
+          Alert.alert('Lien copié', projectUrl);
+        }
+        Alert.alert('Succès', 'Lien copié dans le presse-papiers');
+      } catch (error) {
+        Alert.alert('Erreur', 'Impossible de copier le lien');
+      }
+      setShowShareMenu(false);
+    },
+  };
+
+  const handleViewGallery = (defaultTab: 'Photos' | 'Carte' = 'Photos') => {
+    console.log('Opening gallery with photos:', project.photos);
+    setGalleryDefaultTab(defaultTab);
+    setShowGallery(true);
+  };
+
+  const handleViewPhotos = () => {
+    handleViewGallery('Photos');
+  };
+
+  const handleViewMap = () => {
+    handleViewGallery('Carte');
   };
 
   return (
@@ -174,7 +267,7 @@ const FeedCard: React.FC<FeedCardProps> = ({
         <TouchableOpacity className="mb-4 rounded-md bg-gray-100 p-2" onPress={openFinancialModal}>
           <View className="mb-2 flex-row gap-2">
             <View className="flex-1">
-              <Text className="text-xs text-gray-500">Coût d'exploitation</Text>
+              <Text className="text-xs text-gray-500">Coût d&apos;exploitation</Text>
               <View className="flex-row items-center">
                 <Text className="font-medium">{formatCurrency(project.farmingCost)}</Text>
                 <FontAwesome5
@@ -243,11 +336,15 @@ const FeedCard: React.FC<FeedCardProps> = ({
           <View className="mb-4">
             {/* Action Buttons */}
             <View className="mb-4 flex-row gap-2">
-              <TouchableOpacity className="flex-1 flex-row items-center justify-center gap-2 rounded-md border border-green-600 px-3 py-2">
+              <TouchableOpacity
+                onPress={handleViewPhotos}
+                className="flex-1 flex-row items-center justify-center gap-2 rounded-md border border-green-600 px-3 py-2">
                 <Ionicons name="camera-outline" size={18} color="#16a34a" />
                 <Text className="text-sm font-medium text-green-600">Voir les photos</Text>
               </TouchableOpacity>
-              <TouchableOpacity className="flex-1 flex-row items-center justify-center gap-2 rounded-md border border-green-600 px-3 py-2">
+              <TouchableOpacity
+                onPress={handleViewMap}
+                className="flex-1 flex-row items-center justify-center gap-2 rounded-md border border-green-600 px-3 py-2">
                 <Ionicons name="map-outline" size={18} color="#16a34a" />
                 <Text className="text-sm font-medium text-green-600">Voir sur la carte</Text>
               </TouchableOpacity>
@@ -326,7 +423,7 @@ const FeedCard: React.FC<FeedCardProps> = ({
           {/* Invest Button */}
           {
             <TouchableOpacity
-              onPress={onInvest}
+              onPress={handleOpenInvestModal}
               disabled={fundingGap === 0}
               className={`flex-row items-center gap-1 rounded-md px-3 py-2 ${
                 fundingGap === 0 ? 'bg-gray-300' : 'bg-green-600'
@@ -371,13 +468,62 @@ const FeedCard: React.FC<FeedCardProps> = ({
           </TouchableOpacity>
 
           {/* Share Button */}
-          <TouchableOpacity onPress={onShare} className="flex-row items-center gap-1 px-2 py-1">
-            <Ionicons name="share-outline" size={18} color="#6b7280" />
-          </TouchableOpacity>
+          <View className="relative">
+            <TouchableOpacity
+              onPress={() => setShowShareMenu(!showShareMenu)}
+              className="flex-row items-center gap-1 px-2 py-1">
+              <Ionicons name="share-outline" size={18} color="#6b7280" />
+            </TouchableOpacity>
+
+            {/* Share Menu Dropdown */}
+            {showShareMenu && (
+              <View
+                className="elevation-5 absolute bottom-full right-0 mb-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg"
+                style={{ zIndex: 999 }}>
+                <TouchableOpacity
+                  onPress={shareHandlers.facebook}
+                  className="flex-row items-center gap-3 border-b border-gray-100 px-4 py-3">
+                  <Ionicons name="logo-facebook" size={20} color="#1877F2" />
+                  <Text className="text-sm text-gray-700">Partager sur Facebook</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={shareHandlers.whatsapp}
+                  className="flex-row items-center gap-3 border-b border-gray-100 px-4 py-3">
+                  <Ionicons name="logo-whatsapp" size={20} color="#25D366" />
+                  <Text className="text-sm text-gray-700">Partager sur WhatsApp</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={shareHandlers.mail}
+                  className="flex-row items-center gap-3 border-b border-gray-100 px-4 py-3">
+                  <Ionicons name="mail-outline" size={20} color="#6b7280" />
+                  <Text className="text-sm text-gray-700">Envoyer par email</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  onPress={shareHandlers.copyLink}
+                  className="flex-row items-center gap-3 rounded-b-lg px-4 py-3">
+                  <Ionicons name="copy-outline" size={20} color="#6b7280" />
+                  <Text className="text-sm text-gray-700">Copier le lien</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
         </View>
 
         {/* Comments Section */}
         <CommentsSection projectId={project.id || 0} userId={userId} isVisible={showComments} />
+
+        {/* Share Menu Overlay */}
+        {showShareMenu && (
+          <TouchableOpacity
+            onPress={() => setShowShareMenu(false)}
+            className="absolute inset-0"
+            style={{ zIndex: 998 }}
+            activeOpacity={1}
+          />
+        )}
 
         {/* Financial Details Modal */}
         <FinancialDetailsModal
@@ -386,6 +532,26 @@ const FeedCard: React.FC<FeedCardProps> = ({
           project={project}
           cultureDetails={cultureDetails}
           loading={financialDetailsLoading}
+        />
+
+        {/* Investment Modal */}
+        <InvestmentModal
+          visible={showInvestModal}
+          onClose={() => setShowInvestModal(false)}
+          project={project}
+          fundingGap={fundingGap}
+          currentFunding={currentFunding}
+          onInvestmentComplete={handleInvestmentComplete}
+          user={user}
+        />
+
+        {/* Gallery Modal */}
+        <GaleryDetailModal
+          projectId={project.id.toString()}
+          defaultTab={galleryDefaultTab}
+          visible={showGalery}
+          onClose={() => setShowGallery(false)}
+          photos={displayedPhotos}
         />
       </View>
     </View>

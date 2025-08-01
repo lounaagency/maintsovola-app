@@ -1,18 +1,20 @@
-// app/(tabs)/_layout.tsx
 import { Slot } from 'expo-router';
-import { SafeAreaView, View } from 'react-native';
-import Navbar from '~/components/navigation/Navbar';
-import React, { useState } from 'react';
-import Header from '~/components/navigation/Header';
+import { View } from 'react-native';
+import {KeyboardAvoidingView} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { useState } from 'react';
+import Header from '../../components/navigation/Header';
+import Navbar from '../../components/navigation/Navbar';
 
 export default function TabsLayout() {
   const [activeNavIcon, setActiveNavIcon] = useState('home');
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }}>
-      <Header />
-      <Navbar activeNavIcon={activeNavIcon} onNavChange={setActiveNavIcon} />
+    <SafeAreaView style={{ flex: 1, backgroundColor: 'white' }} edges={['top', 'bottom']}>
       <View style={{ flex: 1 }}>
+        <Header />
+        <Navbar activeNavIcon={activeNavIcon} onNavChange={setActiveNavIcon} />
         <Slot />
       </View>
     </SafeAreaView>
