@@ -1,5 +1,6 @@
 import { View, Text, TouchableOpacity, Image } from 'react-native';
 import { Feather, Ionicons } from '@expo/vector-icons';
+import { Link } from 'expo-router';
 
 interface UserProfile {
   photo_profil?: string;
@@ -19,7 +20,7 @@ export default function ProfileHeader({
   followersCount,
   followingCount,
   projectsCount,
-  onFollowToggle
+  //onFollowToggle
 }: {
   profile: UserProfile;
   isCurrentUser: boolean;
@@ -27,11 +28,11 @@ export default function ProfileHeader({
   followersCount: number;
   followingCount: number;
   projectsCount: number;
-  onFollowToggle: () => void;
+  // onFollowToggle: () => void;
 }) {
   return (
     <View className="p-4">
-      <View className="flex-col items-center">
+      <View className="flex-row">
         {/* Avatar */}
         <View className="mr-4">
           {profile.photo_profil ? (
@@ -50,7 +51,7 @@ export default function ProfileHeader({
         {/* Infos profil */}
         <View className="m-4">
           <View className="flex-col items-center mb-4 ">
-            <Text className="text-2xl font-bold mr-2">
+            <Text className="text-2xl font-bold text-right">
               {`${profile.nom} ${profile.prenoms || ''}`}
             </Text>
             {profile.nom_role && (
@@ -121,7 +122,7 @@ export default function ProfileHeader({
               className={`flex-1 flex-row items-center justify-center py-2 rounded-lg ${
                 isFollowing ? 'border border-black-300' : 'bg-black'
               }`}
-              onPress={onFollowToggle}
+             // onPress={onFollowToggle}
             >
               <Feather
                 name="users"

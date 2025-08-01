@@ -7,9 +7,10 @@ import Activity from '../Navigation/Activity';
 
 const Tab = createMaterialTopTabNavigator();
 
-export default function ProfileTabs() {
+export default function ProfileTabs(props: {style?: any}) {
   return (
     <Tab.Navigator
+      style={props.style}
       screenOptions={{
         tabBarActiveTintColor: '#125b47',
         tabBarInactiveTintColor: 'gray',

@@ -7,6 +7,7 @@ import { useTotalSurfaceForTantsaha } from '~/hooks/useTotalSurfaceForTantsaha';
 import { useTotalProjectNumberForTantsaha } from '~/hooks/useTotalProjectNumberForTantsaha'; // Assumed to return 'count'
 import { useTotalFundingForTantsaha } from '~/hooks/useTotalFundingForTantsaha';
 import { useAuth } from '~/contexts/AuthContext';
+import { ScrollView } from 'react-native-collapsible-tab-view';
 
 const defaultProjectsSummaryData: ProjectsSummaryProps = {
   totalProjects: 0,
@@ -74,12 +75,9 @@ const Projets = () => {
 }
   
   return (
-    <>
-      <Stack.Screen options={{ title: 'Projets' }} />
       <View className='flex-1'>
         <ProjectsSummary {...summaryData} />
       </View>
-    </>
   );
 }
 export default Projets;
