@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getConversationById, getMessages, sendMessage, subscribeToMessages, uploadFile } from '~/services/conversation-message-service';
+
 import { Conversation, Message, Utilisateur } from '~/type/messageInterface';
 import { useAuth } from '~/contexts/AuthContext';
 import { LucideArrowBigLeft } from 'lucide-react-native';
@@ -138,6 +139,7 @@ const ChatScreen = () => {
       created_at: new Date().toISOString(),
       modified_at: new Date().toISOString(),
       pieces_jointes: selectedFiles.map((file) => file.uri || ''),
+      // pieces_jointes: uploadFile ? uploadFile.map(file => file.uri) : undefined,
     };
 
     setMessages((prev) => [...prev, tempMessage]);
