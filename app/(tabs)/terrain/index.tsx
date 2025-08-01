@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView ,TextInput } from 'react-native';
 import { AntDesign } from '@expo/vector-icons';
 import SubNavTabs from 'components/SubNavTabs';
 import { useAuth } from 'contexts/AuthContext';
@@ -40,6 +40,7 @@ export default function TerrainScreen() {
   const [loadingTerrains, setLoadingTerrains] = useState(true);
   const [pendingTerrains, setPendingTerrains] = useState<TerrainData[]>([]);
   const [validatedTerrains, setValidatedTerrains] = useState<TerrainData[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
   const [selectedTerrain, setSelectedTerrain] = useState<TerrainData | null>(null);
   const [selectedTechnicien, setSelectedTechnicien] = useState<{
     id: string;
@@ -50,6 +51,9 @@ export default function TerrainScreen() {
   const [isTerrainValidateOpen, setIsTerrainValidateOpen] = useState(false);
   const [isTerrainDeleteOpen, setIsTerrainDeleteOpen] = useState(false);
   const [isMessageDialogOpen, setIsMessageDialogOpen] = useState(false);
+
+ 
+
   const [agriculteurs, setAgriculteurs] = useState<
     {
       id_utilisateur: string;
@@ -294,16 +298,35 @@ export default function TerrainScreen() {
       setIsMessageDialogOpen(true);
     }
   };
+   //icii
+const filteredTerrains = activeTab === 'En attente'
+  ? pendingTerrains.filter((terrain) =>
+      terrain.nom_terrain.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+  : validatedTerrains.filter((terrain) =>
+      terrain.nom_terrain.toLowerCase().includes(searchQuery.toLowerCase())
+    );
   return (
     <View style={styles.container}>
       <Header onCreateTerrain={handleCreateTerrain} />
+          <View style={styles.searchContainer}>
+            
+            <TextInput
+              style={styles.searchInput}
+              placeholder="Rechercher un terrain..."
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              autoCapitalize="none"
+            />
+          </View>
       {userRole === 'superviseur' ? (
         <View>
+        
           <SubNavTabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
           {activeTab === 'À assigner' && (
             <ScrollView horizontal={true} style={styles.viewContainer}>
               <TerrainTable
-                terrains={pendingTerrains.filter((t) => !t.id_technicien)}
+                terrains={filteredTerrains.filter((t) => !t.id_technicien)}
                 type="pending"
                 userRole={userRole}
                 onTerrainUpdate={handleTerrainUpdate}
@@ -317,7 +340,7 @@ export default function TerrainScreen() {
           {activeTab === 'À valider' && (
             <ScrollView horizontal={true} style={styles.viewContainer}>
               <TerrainTable
-                terrains={pendingTerrains.filter((t) => t.id_technicien)}
+                terrains={filteredTerrains.filter((t) => !t.id_technicien)}
                 type="pending"
                 userRole={userRole}
                 onTerrainUpdate={handleTerrainUpdate}
@@ -331,7 +354,7 @@ export default function TerrainScreen() {
           {activeTab === 'Validés' && (
             <ScrollView horizontal={true} style={styles.viewContainer}>
               <TerrainTable
-                terrains={validatedTerrains}
+                terrains={filteredTerrains}
                 type="validated"
                 userRole={userRole}
                 onTerrainUpdate={handleTerrainUpdate}
@@ -344,11 +367,22 @@ export default function TerrainScreen() {
         </View>
       ) : userRole === 'technicien' ? (
         <View>
+          <View style={styles.searchContainer}>
+            <Text>Débug: Barre de recherche</Text>
+            <TextInput style={styles.searchInput}
+              placeholder="Rechercher un terrain..."
+              value={searchQuery}
+              onChangeText={(text) => setSearchQuery(text)}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
           <SubNavTabs tabs={['En attente', 'Validés']} activeTab={activeTab} onChange={setActiveTab} />
           {activeTab === 'En attente' && (
+            
             <ScrollView horizontal={true} style={styles.viewContainer}>
               <TerrainTable
-                terrains={pendingTerrains.filter((t) => t.id_technicien === user?.id)}
+                terrains={filteredTerrains.filter((t) => t.id_technicien === user?.id)}
                 type="pending"
                 userRole={userRole}
                 onTerrainUpdate={handleTerrainUpdate}
@@ -361,7 +395,7 @@ export default function TerrainScreen() {
           {activeTab === 'Validés' && (
             <ScrollView horizontal={true} style={styles.viewContainer}>
               <TerrainTable
-                terrains={validatedTerrains.filter((t) => t.id_technicien === user?.id)}
+                terrains={filteredTerrains.filter((t) => t.id_technicien === user?.id)}
                 type="validated"
                 userRole={userRole}
                 onTerrainUpdate={handleTerrainUpdate}
@@ -376,7 +410,7 @@ export default function TerrainScreen() {
           {activeTab === 'En attente' && (
             <ScrollView horizontal={true} style={styles.viewContainer}>
               <TerrainTable
-                terrains={pendingTerrains}
+                terrains={filteredTerrains}
                 type="pending"
                 userRole={userRole}
                 onTerrainUpdate={handleTerrainUpdate}
@@ -389,7 +423,7 @@ export default function TerrainScreen() {
           {activeTab === 'Validés' && (
             <ScrollView horizontal={true} style={styles.viewContainer}>
               <TerrainTable
-                terrains={validatedTerrains}
+                terrains={filteredTerrains}
                 type="validated"
                 userRole={userRole}
                 onTerrainUpdate={handleTerrainUpdate}
@@ -510,5 +544,16 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: 500,
     marginVertical: 15,
+  },
+  searchContainer: {
+  marginBottom: 10,
+  },
+  searchInput: {
+    height: 40,
+    borderColor: '#e5e7eb',
+    borderWidth: 1,
+    borderRadius: 5,
+    paddingHorizontal: 10,
+    fontSize: 16,
   },
 });
