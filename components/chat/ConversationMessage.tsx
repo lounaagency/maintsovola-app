@@ -2,16 +2,16 @@
 import React, {
     useCallback,
     useEffect, 
-    useState, 
+    useState,
+    useMemo
 } from 'react';
 import { useAuth } from '~/contexts/AuthContext';
 import { 
-    View ,
+    View,
     Text,
     FlatList,
     TextInput,
     TouchableOpacity,
-    Image,
     ActivityIndicator,
     Dimensions,
 } from 'react-native';
@@ -39,8 +39,6 @@ const ConversationMessage = () => {
     const [filteredUsers, setFilteredUsers] = useState<Utilisateur[]>([]);
     const [filteredConversations, setFilteredConversations] = useState<Conversation[]>([]);
     const [isUserModalVisible, setUserModalVisible] = useState(false);
-
-    // États de loading
     const [isLoadingConversations, setIsLoadingConversations] = useState(true);
     const [isLoadingUsers, setIsLoadingUsers] = useState(true);
 
@@ -73,66 +71,60 @@ const ConversationMessage = () => {
         }
     }, [userId]);
 
-    // Initialisation des données
     useEffect(() => {
         fetchConversations();
         fetchEveryOne();
     }, [fetchConversations, fetchEveryOne]);
-    
-    // Mise à jour des listes filtrées - séparée de l'effet précédent
-    useEffect(() => {
-        setFilteredConversations(conversations);
-    }, [conversations]);
 
-    useEffect(() => {
-        setFilteredUsers(everyone);
-    }, [everyone]);
-    
-    const handleSearch = useCallback((text: string) => {
-        setSearch(text);
-    
-        if (!text.trim()) {
-            setFilteredConversations(conversations);
-            return;
+    const filteredConversationsMemo = useMemo(() => {
+        if (!search.trim()) {
+            return conversations;
         }
-    
-        const lowerText = text.toLowerCase();
-        const filtered = conversations.filter((conv) => {
+        const lowerText = search.toLowerCase();
+        return conversations.filter((conv) => {
             const otherUserId = conv.id_utilisateur1 === userId
                 ? conv.id_utilisateur2
                 : conv.id_utilisateur1;
-    
             const user = everyone.find(u => u.id_utilisateur === otherUserId);
             if (!user) return false;
-    
             return (
                 user.nom?.toLowerCase().includes(lowerText) ||
                 user.prenoms?.toLowerCase().includes(lowerText) ||
                 user.email?.toLowerCase().includes(lowerText)
             );
         });
-    
-        setFilteredConversations(filtered);
-    }, [conversations, everyone, userId]);
+    }, [search, conversations, everyone, userId]);
+
+    const filteredUsersMemo = useMemo(() => {
+        if (!searchUsers.trim()) {
+            return everyone;
+        }
+        const lowerText = searchUsers.toLowerCase();
+        return everyone.filter((user) => {
+            return (
+                user.nom?.toLowerCase().includes(lowerText) ||
+                user.prenoms?.toLowerCase().includes(lowerText) ||
+                user.email?.toLowerCase().includes(lowerText)
+            );
+        });
+    }, [searchUsers, everyone]);
+
+    useEffect(() => {
+        setFilteredConversations(filteredConversationsMemo);
+    }, [filteredConversationsMemo]);
+
+    useEffect(() => {
+        setFilteredUsers(filteredUsersMemo);
+    }, [filteredUsersMemo]);
+
+    const handleSearch = useCallback((text: string) => {
+        setSearch(text);
+    }, []);
 
     const handleSearchUsers = useCallback((text: string) => {
         setSearchUsers(text);
-        if (!text.trim()) {
-            setFilteredUsers(everyone);
-            return;
-        }
-        const lowerText = text.toLowerCase();
-        const filtered = everyone.filter((user) => {
-            return (
-                user.nom?.toLowerCase().includes(lowerText) ||
-                user.prenoms?.toLowerCase().includes(lowerText) ||
-                user.email?.toLowerCase().includes(lowerText)
-            );
-        });
-        setFilteredUsers(filtered);
-    }, [everyone]);
+    }, []);
 
-    // Subscription aux nouvelles conversations
     useEffect(() => {
         if (!userId) return;
       
@@ -164,7 +156,6 @@ const ConversationMessage = () => {
         router.push(`/messages/chat/${conversation.id_conversation}`);
     };
 
-    // Composant de chargement
     const LoadingComponent = () => (
         <View className="flex-1 justify-center items-center py-20">
             <ActivityIndicator size="large" color="#25D366" />
@@ -174,7 +165,6 @@ const ConversationMessage = () => {
         </View>
     );
 
-    // Composant pour état vide
     const EmptyComponent = () => (
         <View className="flex-1 justify-center items-center py-20">
             <Text className="text-gray-500 text-lg font-medium mb-2">
@@ -188,12 +178,10 @@ const ConversationMessage = () => {
       
     return (
         <View style={{ flex: 1, minHeight: screenHeight - 200 }}>
-            {/* Section Search */}
             <View className="mb-4">
                 <SearchBar search={search} handleSearch={handleSearch} />
             </View>
 
-            {/* Modal pour sélectionner un utilisateur */}
             <Modal
                 isVisible={isUserModalVisible}
                 onBackdropPress={() => setUserModalVisible(false)}
@@ -201,7 +189,6 @@ const ConversationMessage = () => {
                 style={{ justifyContent: 'flex-end', margin: 0 }}
             >
                 <View className="bg-white rounded-t-2xl p-4 max-h-[70%]">
-                    {/* Header avec titre et bouton fermer alignés */}
                     <View className="flex-row items-center justify-between mb-4">
                         <Text className="text-lg font-semibold text-gray-900">
                             Nouveau message
@@ -214,7 +201,6 @@ const ConversationMessage = () => {
                         </TouchableOpacity>
                     </View>
 
-                    {/* Barre de recherche */}
                     <View className="mb-4">
                        <TextInput
                            className="bg-gray-100 rounded-xl px-4 py-3 text-base"
@@ -224,7 +210,6 @@ const ConversationMessage = () => {
                        />
                     </View>
 
-                    {/* Liste des utilisateurs */}
                     {isLoadingUsers ? (
                         <View className="flex-1 justify-center items-center py-10">
                             <ActivityIndicator size="large" color="#25D366" />
@@ -239,7 +224,6 @@ const ConversationMessage = () => {
                                     item={item} 
                                     onPress={async (user) => {
                                         setUserModalVisible(false);
-                                        // await createConversation(user.id_utilisateur, userId);
                                     }}
                                 />
                             )}
@@ -254,7 +238,6 @@ const ConversationMessage = () => {
                 </View>
             </Modal>
 
-            {/* Section Conversations */}
             <View className="flex-1">
                 {isLoadingConversations ? (
                     <LoadingComponent />
@@ -277,7 +260,6 @@ const ConversationMessage = () => {
                 )}
             </View>
 
-            {/* Bouton flottant */}
             <FloatingActionButton 
                 onPress={() => setUserModalVisible(true)}
             />
