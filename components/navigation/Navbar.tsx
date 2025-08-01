@@ -207,27 +207,7 @@ const Navbar: React.FC<NavbarProps> = ({ activeNavIcon = "home", onNavChange }) 
         router.push("/messages")
         break
       case "profile":
-        router.push("/profil")
-        setShowProfile(true)
-        break
-    setCurrentActiveIcon(iconId)
-    onNavChange?.(iconId)
 
-    switch (iconId) {
-      case "home":
-        router.push("/feed")
-        break
-      case "location":
-        router.push("/terrain")
-        break
-      case "projet":
-        router.push("/projet")
-        break
-      case "messages":
-        router.push("/messages")
-        break
-      case "profile":
-        // router.push("/profil")
         setShowProfile(true)
         break
       default:

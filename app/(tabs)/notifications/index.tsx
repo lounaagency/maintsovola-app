@@ -8,9 +8,12 @@ import {
   Image,
   SafeAreaView,
 } from 'react-native';
-
+import {useAuth} from '~/contexts/AuthContext'; // Adjust the import path as necessary
 import { supabase } from '~/lib/data'; // Adjust the import path as necessary
+
 export default  function NotifScreen() {
+  const user = useAuth();
+  console.log('User Auth:', user);
   const [notifications, setNotifications] = useState([
     {
       id: 1,
@@ -181,7 +184,7 @@ const id = '1'; // Remplace par l'ID réel de l'utilisateur (ex: user?.id)
                 </Text>
                 
                 {notification.content && (
-                  <Text style={styles.contentText}>"{notification.content}"</Text>
+                  <Text style={styles.contentText}>{notification.content}</Text>
                 )}
                 
                 <Text style={styles.timeText}>{notification.time}</Text>
