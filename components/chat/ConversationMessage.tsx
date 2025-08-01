@@ -137,20 +137,13 @@ const ConversationMessage = () => {
         };
     }, [userId]);
 
-    const createConversation = async (otherUserId: string, currentUserId: string) => {
-        try {
-            const new_id_conversation = await setNewConversation({ currentUserId, otherUserId });
-            if (!new_id_conversation) {
-                console.warn("No conversation ID returned.");
-                return;
-            }
-            console.log("Creating conversation with otherUserId:", otherUserId, "and currentUserId:", currentUserId);
-            router.push(`/messages/chat/${new_id_conversation}`);
-        } catch (error) {
-            console.error("Error fetching conversation:", error);
-        }
-    };
-
+    if(isLoadingConversations && !userId) {
+        return (
+            <View className='flex-1 justify-center items-center p-3 border-1 rounded-md'>
+                <Text className=" font-bold text-xs text-gray-60 p-10 border-2">Vous êtes Hors Ligne</Text>
+            </View>
+        )
+    }
     const navigateToChat = (conversation: Conversation) => {
         console.log("Navigating to chat with conversation:", conversation);
         router.push(`/messages/chat/${conversation.id_conversation}`);

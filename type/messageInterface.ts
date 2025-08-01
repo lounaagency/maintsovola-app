@@ -16,7 +16,8 @@ export interface Message {
     lu: boolean;
     created_at: string;
     modified_at: string;
-    pieces_jointes?: string[]; // Optional field for attachments
+    pieces_jointes?: string[];
+     // Optional field for attachments
 }
 
 export interface Utilisateur {

@@ -9,7 +9,8 @@ export async function getConversation({ id_user }: { id_user: string }): Promise
         .from("conversation")
         .select("*")
         .or(`id_utilisateur1.eq.${id_user}, id_utilisateur2.eq.${id_user}`)
-        .order("derniere_activite", { ascending: false });
+        .order("derniere_activite", { ascending: false })
+        .limit(100);
         
         if (error) {
             throw new Error(`Failed to get conversation: ${error.message}`);
@@ -40,7 +41,8 @@ export async function getMessages({ id_conversation }: { id_conversation: number
         .from("message")
         .select("*")
         .eq("id_conversation", id_conversation)
-        .order("created_at", { ascending: false });
+        .order("created_at", { ascending: false })
+        .limit(100); // Limiter à 100 messages pour éviter de surcharger
         
         if (error) {
             throw new Error(`Failed to get messages: ${error.message}`);
@@ -331,7 +333,7 @@ export async function uploadFile(uri: string, fileName: string, contentType: str
 
       // Upload to Supabase storage
       const { data, error } = await supabase.storage
-        .from('pieces_jointes')
+        .from('pieces-jointes-envoyes')
         .upload(fileName, buffer, {
           contentType,
           upsert: true,
@@ -343,7 +345,7 @@ export async function uploadFile(uri: string, fileName: string, contentType: str
 
       // Get public URL
       const { data: publicUrlData } = supabase.storage
-        .from('pieces_jointes')
+        .from('pieces-jointes-envoyes')
         .getPublicUrl(fileName);
 
       if (!publicUrlData?.publicUrl) {

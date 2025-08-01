@@ -16,6 +16,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { getConversationById, getMessages, sendMessage, subscribeToMessages, uploadFile } from '~/services/conversation-message-service';
+
 import { Conversation, Message, Utilisateur } from '~/type/messageInterface';
 import { useAuth } from '~/contexts/AuthContext';
 import { LucideArrowBigLeft } from 'lucide-react-native';
@@ -138,6 +139,7 @@ const ChatScreen = () => {
       created_at: new Date().toISOString(),
       modified_at: new Date().toISOString(),
       pieces_jointes: selectedFiles.map((file) => file.uri || ''),
+      // pieces_jointes: uploadFile ? uploadFile.map(file => file.uri) : undefined,
     };
 
     setMessages((prev) => [...prev, tempMessage]);
@@ -227,7 +229,21 @@ const ChatScreen = () => {
               {item.contenu}
             </Text>
           )}
-          {item.pieces_jointes && item.pieces_jointes.length > 0 && (
+
+          <View style={styles.messageFooter}>
+            <Text style={[styles.messageTime, { color: isCurrentUser ? 'rgba(255,255,255,0.7)' : '#8E8E93' }]}>
+              {new Date(item.date_envoi).toLocaleTimeString('fr-FR', {
+                hour: '2-digit',
+                minute: '2-digit',
+                hour12: false,
+              })}
+            </Text>
+            {isCurrentUser && (
+              <Text style={styles.messageStatus}>✓✓</Text>
+            )}
+          </View>
+        </View>
+            {item.pieces_jointes && item.pieces_jointes.length > 0 && (
             <View style={styles.attachmentContainer}>
               {item.pieces_jointes.map((uri, index) => {
                 const isImage = uri.match(/\.(jpg|jpeg|png|gif)$/i);
@@ -250,19 +266,6 @@ const ChatScreen = () => {
               })}
             </View>
           )}
-          <View style={styles.messageFooter}>
-            <Text style={[styles.messageTime, { color: isCurrentUser ? 'rgba(255,255,255,0.7)' : '#8E8E93' }]}>
-              {new Date(item.date_envoi).toLocaleTimeString('fr-FR', {
-                hour: '2-digit',
-                minute: '2-digit',
-                hour12: false,
-              })}
-            </Text>
-            {isCurrentUser && (
-              <Text style={styles.messageStatus}>✓✓</Text>
-            )}
-          </View>
-        </View>
       </View>
     );
   };
