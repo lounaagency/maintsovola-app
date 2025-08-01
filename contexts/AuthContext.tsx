@@ -8,12 +8,14 @@ import { Alert } from 'react-native';
 
 // Types et interfaces
 interface Telephone {
-  id?: number;
+  id_telephone?: number;
   id_utilisateur: string;
   numero: string;
   type: 'principal' | 'whatsapp' | 'mobile_banking' | 'autre';
+  est_whatsapp?: boolean;
+  est_mobile_banking?: boolean;
   created_at?: string;
-  updated_at?: string;
+  modified_at?: string;
 }
 
 interface UserProfile {
@@ -30,10 +32,8 @@ interface UserProfile {
   id_role: number;
   nom_role?: string;
   telephones?: Telephone[];
-  is_investor?: boolean;
-  is_farming_owner?: boolean;
   created_at?: string;
-  updated_at?: string;
+  modified_at?: string;
 }
 
 interface SignUpUserData {
@@ -148,6 +148,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const setLoading = (loading: boolean) => {
     setState((prev) => ({ ...prev, loading }));
+  };
+
+  // Fonction pour obtenir l'email à partir du téléphone
+  const getEmailFromPhone = async (phone: string): Promise<string | null> => {
+    if (!supabase) return null;
+
+    try {
+      // Nettoyer le numéro de téléphone
+      const cleanPhone = phone.replace(/\s/g, '');
+      
+      // Rechercher l'utilisateur par numéro de téléphone
+      const { data: phoneData, error: phoneError } = await supabase
+        .from('telephone')
+        .select('id_utilisateur')
+        .eq('numero', cleanPhone)
+        .single();
+
+      if (phoneError || !phoneData) {
+        console.log('Aucun téléphone trouvé pour:', cleanPhone);
+        return null;
+      }
+
+      // Récupérer l'email de l'utilisateur
+      const { data: userData, error: userError } = await supabase
+        .from('utilisateur')
+        .select('email')
+        .eq('id_utilisateur', phoneData.id_utilisateur)
+        .single();
+
+      if (userError || !userData?.email) {
+        console.log('Aucun email trouvé pour utilisateur:', phoneData.id_utilisateur);
+        return null;
+      }
+
+      return userData.email;
+    } catch (error) {
+      console.error("Erreur lors de la récupération de l'email par téléphone:", error);
+      return null;
+    }
   };
 
   // Initialisation de Supabase
@@ -291,10 +330,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error('Données utilisateur introuvables');
       }
 
-      // Récupérer les numéros de téléphone
+      // Récupérer les numéros de téléphone avec les bonnes colonnes
       const { data: telephonesData, error: telephonesError } = await supabase
         .from('telephone')
-        .select('*')
+        .select('id_telephone, id_utilisateur, numero, type, est_whatsapp, est_mobile_banking, created_at, modified_at')
         .eq('id_utilisateur', userId);
 
       if (telephonesError) {
@@ -303,12 +342,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
       const telephones: Telephone[] = telephonesData
         ? telephonesData.map((tel: any) => ({
-            id: tel.id,
+            id_telephone: tel.id_telephone,
             id_utilisateur: tel.id_utilisateur,
             numero: tel.numero,
             type: tel.type as Telephone['type'],
+            est_whatsapp: tel.est_whatsapp,
+            est_mobile_banking: tel.est_mobile_banking,
             created_at: tel.created_at,
-            updated_at: tel.updated_at,
+            modified_at: tel.modified_at,
           }))
         : [];
 
@@ -327,10 +368,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         id_role: userData.id_role,
         nom_role: userData.role?.nom_role,
         telephones,
-        is_investor: userData.is_investor,
-        is_farming_owner: userData.is_farming_owner,
         created_at: userData.created_at,
-        updated_at: userData.updated_at,
+        modified_at: userData.modified_at,
       };
 
       // Sauvegarder en cache
@@ -370,14 +409,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         throw new Error("Format d'identifiant invalide (email ou téléphone requis)");
       }
 
-      // Données d'authentification
+      // Déterminer l'ID du rôle
+      const roleId =
+        ROLE_MAPPING[userData.role as keyof typeof ROLE_MAPPING] || ROLE_MAPPING.simple;
+
+      // Données d'authentification - store preferences in metadata
       const authOptions = {
         data: {
           nom: userData.nom,
           prenoms: userData.prenoms,
           role: userData.role || 'simple',
-          is_investor: userData.is_investor || false,
-          is_farming_owner: userData.is_farming_owner || false,
+          preferences: {
+            is_investor: userData.is_investor || false,
+            is_farming_owner: userData.is_farming_owner || false,
+          },
         },
       };
 
@@ -390,8 +435,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           options: authOptions,
         });
       } else {
+        // For phone registration, we need an email for Supabase Auth
+        if (!userData.email) {
+          throw new Error("Un email est requis pour l'inscription par téléphone");
+        }
         authResult = await supabase.auth.signUp({
-          phone: identifier,
+          email: userData.email,
           password,
           options: authOptions,
         });
@@ -402,20 +451,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (error) throw error;
       if (!data.user) throw new Error("Échec de la création de l'utilisateur");
 
-      // Déterminer l'ID du rôle
-      const roleId =
-        ROLE_MAPPING[userData.role as keyof typeof ROLE_MAPPING] || ROLE_MAPPING.simple;
-
       // Insérer dans la table utilisateur
       const { error: dbError } = await supabase.from('utilisateur').insert([
         {
           id_utilisateur: data.user.id,
           email: isEmail ? identifier : userData.email,
           nom: userData.nom,
-          prenoms: userData.prenoms,
+          prenoms: userData.prenoms || null,
           id_role: roleId,
-          is_investor: userData.is_investor || false,
-          is_farming_owner: userData.is_farming_owner || false,
         },
       ]);
 
@@ -427,16 +470,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       // Sauvegarder le téléphone si fourni
       const phoneToSave = isEmail ? userData.telephone : identifier;
       if (phoneToSave && isValidPhone(phoneToSave)) {
+        const cleanPhone = phoneToSave.replace(/\s/g, '');
+        
         const { error: phoneError } = await supabase.from('telephone').insert([
           {
             id_utilisateur: data.user.id,
-            numero: phoneToSave,
+            numero: cleanPhone,
             type: 'principal',
+            est_whatsapp: false,
+            est_mobile_banking: false,
           },
         ]);
 
         if (phoneError) {
           console.warn('Erreur lors de la sauvegarde du téléphone:', phoneError);
+          
+          // Check if it's an RLS policy error
+          if (phoneError.code === '42501') {
+            console.error('❌ Erreur RLS: Vérifiez les politiques de sécurité sur la table telephone');
+            // You might want to show a user-friendly message here
+            Alert.alert(
+              'Information',
+              'Votre compte a été créé avec succès, mais le numéro de téléphone n\'a pas pu être sauvegardé. Vous pourrez l\'ajouter plus tard dans votre profil.'
+            );
+          }
+          // Ne pas faire échouer l'inscription pour une erreur de téléphone
+        } else {
+          console.log('✅ Téléphone sauvegardé:', cleanPhone);
         }
       }
 
@@ -451,7 +511,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
-  // Connexion
+  // Connexion - Modifiée pour supporter email et téléphone
   const signIn = async (identifier: string, password: string): Promise<void> => {
     if (!supabase) {
       throw new Error('Client Supabase non initialisé');
@@ -461,12 +521,27 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(true);
       clearError();
 
-      if (!isValidEmail(identifier)) {
-        throw new Error('Veuillez utiliser une adresse email pour vous connecter');
+      const isEmail = isValidEmail(identifier);
+      const isPhone = isValidPhone(identifier);
+
+      if (!isEmail && !isPhone) {
+        throw new Error('Veuillez utiliser une adresse email ou un numéro de téléphone valide');
       }
 
+      let emailToUse = identifier;
+
+      // Si c'est un numéro de téléphone, récupérer l'email associé
+      if (isPhone) {
+        const associatedEmail = await getEmailFromPhone(identifier);
+        if (!associatedEmail) {
+          throw new Error('Aucun compte trouvé avec ce numéro de téléphone');
+        }
+        emailToUse = associatedEmail;
+      }
+
+      // Connexion avec l'email (soit fourni directement, soit récupéré du téléphone)
       const { data, error } = await supabase.auth.signInWithPassword({
-        email: identifier,
+        email: emailToUse,
         password,
       });
 
@@ -475,7 +550,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           throw new Error('Veuillez vérifier votre email avant de vous connecter');
         }
         if (error.message?.includes('Invalid login credentials')) {
-          throw new Error('Email ou mot de passe incorrect');
+          if (isPhone) {
+            throw new Error('Numéro de téléphone ou mot de passe incorrect');
+          } else {
+            throw new Error('Email ou mot de passe incorrect');
+          }
         }
         throw error;
       }
@@ -581,7 +660,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         if (error) throw error;
       } else {
         const { error } = await supabase.auth.resetPasswordForEmail(email, {
-          redirectTo: undefined, // Pas de redirection automatique
+          redirectTo: undefined,
         });
         if (error) throw error;
       }
@@ -670,18 +749,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setLoading(true);
       clearError();
 
+      const updateData: any = {};
+      if (profileData.nom) updateData.nom = profileData.nom;
+      if (profileData.prenoms !== undefined) updateData.prenoms = profileData.prenoms;
+      if (profileData.email) updateData.email = profileData.email;
+      if (profileData.photo_profil !== undefined)
+        updateData.photo_profil = profileData.photo_profil;
+      if (profileData.photo_couverture !== undefined)
+        updateData.photo_couverture = profileData.photo_couverture;
+      if (profileData.adresse !== undefined) updateData.adresse = profileData.adresse;
+      if (profileData.bio !== undefined) updateData.bio = profileData.bio;
+
       const { error } = await supabase
         .from('utilisateur')
-        .update({
-          nom: profileData.nom,
-          prenoms: profileData.prenoms,
-          email: profileData.email,
-          photo_profil: profileData.photo_profil,
-          photo_couverture: profileData.photo_couverture,
-          adresse: profileData.adresse,
-          bio: profileData.bio,
-          updated_at: new Date().toISOString(),
-        })
+        .update(updateData)
         .eq('id_utilisateur', state.user.id);
 
       if (error) throw error;
@@ -718,7 +799,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   // Ne pas rendre les enfants jusqu'à ce que Supabase soit initialisé
   if (!supabase) {
-    return null; // Ou un composant de chargement
+    return null;
   }
 
   return <AuthContext.Provider value={contextValue}>{children}</AuthContext.Provider>;
