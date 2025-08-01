@@ -1,9 +1,8 @@
 import type React from "react"
 import { useState } from "react"
-import { View, Text, TouchableOpacity, Modal, ScrollView, TouchableWithoutFeedback, Image } from "react-native"
+import { View, Text, TouchableOpacity, Modal, TouchableWithoutFeedback, Image } from "react-native"
 import { useRouter } from "expo-router"
 import { MaterialIcons } from "@expo/vector-icons"
-
 interface NavItem {
   name: string
   type: string
@@ -345,7 +344,7 @@ const Navbar: React.FC<NavbarProps> = ({ activeNavIcon = "home", onNavChange }) 
                 className="flex-row items-center px-4 py-3 active:bg-gray-50"
                 onPress={() => {
                   setShowProfile(false)
-                  console.log("Navigation vers paramètres")
+                  router.push('/settings');
                 }}
                 activeOpacity={0.8}
               >
@@ -404,7 +403,6 @@ const Navbar: React.FC<NavbarProps> = ({ activeNavIcon = "home", onNavChange }) 
                 className="flex-row items-center px-4 py-3 active:bg-red-50"
                 onPress={() => {
                   setShowProfile(false)
-                  console.log("Déconnexion")
                 }}
                 activeOpacity={0.8}
               >

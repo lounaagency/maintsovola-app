@@ -6,7 +6,6 @@ import { ProjectsSummaryProps } from '~/types/projet'
 import { useTotalSurfaceForTantsaha } from '~/hooks/useTotalSurfaceForTantsaha';
 import { useTotalProjectNumberForTantsaha } from '~/hooks/useTotalProjectNumberForTantsaha'; // Assumed to return 'count'
 import { useTotalFundingForTantsaha } from '~/hooks/useTotalFundingForTantsaha';
-import { useAuth } from '~/contexts/AuthContext';
 
 const defaultProjectsSummaryData: ProjectsSummaryProps = {
   totalProjects: 0,
@@ -22,9 +21,12 @@ const defaultProjectsSummaryData: ProjectsSummaryProps = {
   projectsByCulture: [],
 };
 
-const Projets = () => {
-  const { user } = useAuth();
-  const currentTantsahaId: string | null = user?.id ?? null;
+const Projets = ({
+  id
+}: {
+  id: string;
+}) => {
+  const currentTantsahaId: string | null = id ?? null;
   const { totalSurface, loading: loadingSurface, error: errorSurface } = useTotalSurfaceForTantsaha(currentTantsahaId);
   const { totalProject: totalProjectCount, loading: loadingProjectCount, error: errorProjectCount } = useTotalProjectNumberForTantsaha(currentTantsahaId);
   const { totalFunding, loading: loadingFunding, error: errorFunding } = useTotalFundingForTantsaha(currentTantsahaId);
