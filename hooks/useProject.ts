@@ -172,6 +172,190 @@ export interface ProjectDetails {
   }>;
 }
 
+export interface ProjectMetrics {
+  totalCost: number;
+  currentFunding: number;
+  fundingProgress: number;
+  isFundingComplete: boolean;
+  rendementProduits: string;
+  totalEstimatedRevenue: number;
+  totalProfit: number;
+}
+
+export const useProjectData = (projectId: number) => {
+  const [project, setProject] = useState<ProjectDataDetails | null>(null);
+  const [investments, setInvestments] = useState<Investment[]>([]);
+  const [jalons, setJalons] = useState<ProjectJalon[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchProject = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('projet')
+        .select(`
+          *,
+          tantsaha:id_tantsaha(nom,prenoms,photo_profil),
+          terrain:id_terrain(*),
+          region:id_region(nom_region),
+          district:id_district(nom_district),
+          commune:id_commune(nom_commune),
+          superviseur:id_superviseur(nom,prenoms,photo_profil),
+          technicien:id_technicien(nom,prenoms,photo_profil),
+          projet_culture(*,culture:id_culture(nom_culture,prix_tonne,rendement_ha))
+        `)
+        .eq('id_projet', projectId)
+        .single();
+
+      if (error) throw error;
+      setProject(data);
+      return data;
+    } catch (err: any) {
+      console.error('Erreur lors de la récupération du projet:', err);
+      setError(err.message);
+      return null;
+    }
+  };
+
+  const fetchInvestments = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('investissement')
+        .select(`
+          *,
+          investisseur:id_investisseur(nom,prenoms,photo_profil)
+        `)
+        .eq('id_projet', projectId)
+        .order('date_decision_investir', { ascending: false });
+
+      if (error) throw error;
+      setInvestments(data || []);
+      return data || [];
+    } catch (err: any) {
+      console.error('Erreur lors de la récupération des investissements:', err);
+      setError(err.message);
+      return [];
+    }
+  };
+
+  const fetchJalons = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('jalon_projet')
+        .select(`
+          *,
+          jalon_agricole:id_jalon_agricole(nom_jalon,action_a_faire),
+          culture:jalon_agricole(id_culture(nom_culture))
+        `)
+        .eq('id_projet', projectId)
+        .order('date_previsionnelle', { ascending: true });
+
+      if (error) throw error;
+      setJalons(data || []);
+      return data || [];
+    } catch (err: any) {
+      console.error('Erreur lors de la récupération des jalons:', err);
+      setError(err.message);
+      return [];
+    }
+  };
+
+  const fetchAll = async () => {
+    setLoading(true);
+    setError(null);
+    
+    try {
+      await Promise.all([
+        fetchProject(),
+        fetchInvestments(),
+        fetchJalons()
+      ]);
+    } catch (err: any) {
+      console.error('Erreur lors de la récupération des données:', err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Calcul des métriques du projet
+  const calculateMetrics = (): ProjectMetrics | null => {
+    if (!project || !investments) return null;
+
+    const projetCultures = project.projet_culture || [];
+
+    // Coût total d'exploitation
+    const totalCost = projetCultures.reduce((sum, pc) => 
+      sum + (pc.cout_exploitation_previsionnel || 0), 0);
+
+    // Financement actuel (somme de tous les investissements)
+    const currentFunding = investments.reduce((sum, inv) => 
+      sum + (inv.montant || 0), 0);
+
+    // Progression du financement
+    const fundingProgress = totalCost === 0 ? 0 : Math.min(Math.round((currentFunding / totalCost) * 100), 100);
+    const isFundingComplete = fundingProgress >= 100;
+
+    // Rendement prévu
+    const yieldStrings = projetCultures.map(pc => {
+      const nom = pc.culture?.nom_culture || "Non spécifié";
+      const tonnage = pc.rendement_previsionnel || 
+                     ((pc.culture?.rendement_ha || 0) * (project.surface_ha || 1));
+      return `${Math.round(tonnage * 100) / 100} t de ${nom}`;
+    });
+    const rendementProduits = yieldStrings.length > 0 ? yieldStrings.join(", ") : "N/A";
+
+    // Revenu estimé
+    const totalEstimatedRevenue = projetCultures.reduce((sum, pc) => {
+      const rendement = pc.rendement_previsionnel || 
+                       ((pc.culture?.rendement_ha || 0) * (project.surface_ha || 1));
+      const prixTonne = pc.culture?.prix_tonne || 0;
+      return sum + (rendement * prixTonne);
+    }, 0);
+
+    // Bénéfice total
+    const totalProfit = totalEstimatedRevenue - totalCost;
+
+    return {
+      totalCost,
+      currentFunding,
+      fundingProgress,
+      isFundingComplete,
+      rendementProduits,
+      totalEstimatedRevenue,
+      totalProfit
+    };
+  };
+
+  useEffect(() => {
+    if (projectId) {
+      fetchAll();
+    }
+  }, [projectId]);
+
+  const metrics = calculateMetrics();
+
+  return {
+    // Données
+    project,
+    investments,
+    jalons,
+    
+    // État
+    loading,
+    error,
+    
+    // Métriques calculées
+    metrics,
+    
+    // Fonctions de rafraîchissement
+    refetchProject: fetchProject,
+    refetchInvestments: fetchInvestments,
+    refetchJalons: fetchJalons,
+    refetchAll: fetchAll,
+  };
+};
+
 
 export const fetchProjectInvestments = async (projectId: number): Promise<Investment[]> => {
   const { data, error } = await supabase
