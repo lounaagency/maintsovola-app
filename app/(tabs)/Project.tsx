@@ -174,7 +174,6 @@ export default function Project({isPass = false}: {isPass: boolean}) {
         </TouchableOpacity>
 
         <ModalAddStyled
-          project={projects[0]}
           isVisible={isVisibleAdd}
           onClose={() => setisVisibleAdd(false)}
           userProfile={{userProfile, userName}}

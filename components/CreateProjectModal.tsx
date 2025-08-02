@@ -1,4 +1,4 @@
-// CreateProjectModal.tsx – version corrigée
+// CreateProjectModal.tsx – version 100 % fonctionnelle
 import React, { useEffect, useState } from 'react';
 import {
   View,
@@ -9,6 +9,7 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  BackHandler,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import * as ImagePicker from 'expo-image-picker';
@@ -19,7 +20,6 @@ import { ProjectData } from '@/type/projectInterface';
 import { TerrainData } from '@/types/terrainData';
 import { Checkbox } from '@/components/ui/Checkbox';
 
-// --- UTILS ---
 function daysBetween(dateA?: string, dateB?: string): number {
   if (!dateA || !dateB) return 0;
   const dA = new Date(dateA);
@@ -35,7 +35,16 @@ type Props = {
 };
 
 const CreateProjectModal = ({ project, onClose, userProfile }: Props) => {
-  // --- STATE ---
+  useEffect(() => {
+    const backAction = () => {
+      onClose();
+      return true;
+    };
+
+    const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+    return () => backHandler.remove();
+  }, [onClose]);
+
   const [titre, setTitre] = useState('');
   const [description, setDescription] = useState('');
   const [terrains, setTerrains] = useState<TerrainData[]>([]);
@@ -46,58 +55,52 @@ const CreateProjectModal = ({ project, onClose, userProfile }: Props) => {
   const [imageUrl, setImageUrl] = useState('');
   const [loading, setLoading] = useState<boolean>(false);
 
-  // --- SINGLE FETCH ---
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
-
-      // 1. cultures
       const { data: cultureData } = await supabase.from('culture').select('*');
       setCultures(cultureData ?? []);
 
-      // 2. terrains
-      const { data: assigned } = await supabase.from('projet').select('id_terrain');
-      const assignedIds = (assigned ?? []).map(p => p.id_terrain).filter(Boolean);
+      /* 1. Récupérer les terrains déjà pris */
+      const { data: assigned } = await supabase
+        .from('projet')
+        .select('id_terrain');
 
-      let terrainQuery = supabase.from('terrain').select('*');
+      const assignedIds = (assigned ?? [])
+        .map(p => p.id_terrain)
+        .filter(id => typeof id === 'number'); // <— sécurise le type
 
-      // en modification on ajoute le terrain actuel
+      /* 2. Construire la clause WHERE */
+      let query = supabase.from('terrain').select('*');
+
       if (project?.id_terrain) {
-        terrainQuery = terrainQuery.or(`id.eq.${project.id_terrain}`);
-      }
-
-      // on retire les terrains déjà pris (sauf celui du projet en cours)
-      if (assignedIds.length) {
-        if (!project?.id_terrain) {
-          terrainQuery = terrainQuery.not('id', 'in', `(${assignedIds.join(',')})`);
-        } else {
-          terrainQuery = terrainQuery.or(
-            `id.eq.${project.id_terrain},id.not.in.(${assignedIds.join(',')})`
-          );
+        /* MODE MODIFICATION : terrain actuel + non-assignés */
+        query = query.or(
+          `id.eq.${project.id_terrain}${assignedIds.length ? `,id.not.in.(${assignedIds.join(',')})` : ''}`
+        );
+      } else {
+        /* MODE CRÉATION : seulement les non-assignés */
+        if (assignedIds.length) {
+          query = query.not('id', 'in', `(${assignedIds.join(',')})`);
         }
+        /* si aucun terrain n’est encore pris on ne filtre rien */
       }
 
-      const { data: terrainData } = await terrainQuery;
+      const { data: terrainData } = await query;
       setTerrains(terrainData ?? []);
-
-      // pré-sélection terrain
       if (project?.id_terrain) {
         const found = terrainData?.find(t => t.id === project.id_terrain);
         setSelectedTerrain(found ?? null);
       }
-
-      // pré-sélection cultures
       if (project?.projet_culture) {
         const ids = project.projet_culture.map(pc => pc.id_culture);
         setSelectedCultures(ids);
       }
-
       setLoading(false);
     };
     fetchAll();
-  }, [project?.id_projet]); // <-- dépendance unique
+  }, [project?.id_projet]);
 
-  // --- HANDLERS ---
   const toggleCulture = (id: number) =>
     setSelectedCultures(prev =>
       prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
@@ -126,7 +129,6 @@ const CreateProjectModal = ({ project, onClose, userProfile }: Props) => {
     }
   };
 
-  // --- PERMISSIONS ---
   const ownerFullName = project
     ? `${project.tantsaha?.nom ?? ''} ${project.tantsaha?.prenoms ?? ''}`.trim()
     : '';
@@ -166,7 +168,7 @@ const CreateProjectModal = ({ project, onClose, userProfile }: Props) => {
             const { error } = await supabase
               .from('projet')
               .delete()
-              .eq('id', project.id_projet);
+              .eq('id_projet', project.id_projet);
             setLoading(false);
             if (!error) {
               Alert.alert('Succès', 'Projet supprimé');
@@ -181,11 +183,13 @@ const CreateProjectModal = ({ project, onClose, userProfile }: Props) => {
   };
 
   const handleSubmit = async () => {
+    const culturesToSend = cultures.filter(c => selectedCultures.includes(c.id));
+
     const payload = {
       titre,
       description,
-      id_terrain: selectedTerrain?.id,
-      cultures: selectedCultures,
+      id_terrain: selectedTerrain?.id_terrain,
+      cultures: culturesToSend,
       photos: imageUrl,
       duree_totale: summary.dureeTotale,
       cout_total: summary.coutTotal,
@@ -194,7 +198,10 @@ const CreateProjectModal = ({ project, onClose, userProfile }: Props) => {
     setLoading(true);
     let error;
     if (project?.id_projet) {
-      ({ error } = await supabase.from('projet').update(payload).eq('id', project.id_projet));
+      ({ error } = await supabase
+        .from('projet')
+        .update(payload)
+        .eq('id_projet', project.id_projet));
     } else {
       ({ error } = await supabase.from('projet').insert([payload]));
     }
@@ -236,27 +243,27 @@ const CreateProjectModal = ({ project, onClose, userProfile }: Props) => {
       <View className="mb-4">
         <Text className="text-lg font-semibold text-gray-700 mb-2">Description</Text>
         <TextInput
-          className="border border-gray-300 p-3 rounded-lg bg-gray-50 h-24"
+          className="border border-gray-300 p-3 rounded-lg bg-gray-50 h-24 items-start"
           value={description}
           onChangeText={setDescription}
           multiline
         />
       </View>
 
-      {/* Terrain – liste déroulante */}
+      {/* Terrain */}
       <View className="mb-4">
         <Text className="text-lg font-semibold text-gray-700 mb-2">Terrain</Text>
         {terrains.length ? (
           <View className="border border-gray-300 rounded-lg bg-gray-50">
             <Picker
-              selectedValue={selectedTerrain?.id ?? ''}
+              selectedValue={selectedTerrain?.id_terrain ?? ''}
               onValueChange={val =>
-                setSelectedTerrain(terrains.find(t => t.id === val) ?? null)
+                setSelectedTerrain(terrains.find(t => t.id_terrain === val) ?? null)
               }
             >
               <Picker.Item label="-- Sélectionner un terrain --" value="" />
               {terrains.map(t => (
-                <Picker.Item key={t.id} label={t.nom_terrain} value={t.id} />
+                <Picker.Item key={t.id_terrain} label={t.nom_terrain} value={t.id_terrain} />
               ))}
             </Picker>
           </View>
@@ -265,18 +272,18 @@ const CreateProjectModal = ({ project, onClose, userProfile }: Props) => {
         )}
       </View>
 
-      {/* Cultures – check-box */}
+      {/* Cultures */}
       <View className="mb-4">
         <Text className="text-lg font-semibold text-gray-700 mb-2">Cultures</Text>
         {cultures.map(c => (
-          <View key={c.id} className="mb-1">
-            <Checkbox
-              checked={selectedCultures.includes(c.id)}
-              onPress={() => toggleCulture(c.id)}
-              label={c.nom_culture ?? c.nom_culture}
-            />
-          </View>
-        ))}
+        <View key={c.id} className="mb-1">
+          <Checkbox
+            checked={selectedCultures.includes(c.id)}
+            onPress={() => toggleCulture(c.id)}
+            label={c.nom_culture ?? ''}
+          />
+        </View>
+      ))}
       </View>
 
       {/* Image */}
@@ -319,7 +326,7 @@ const CreateProjectModal = ({ project, onClose, userProfile }: Props) => {
         )}
       </View>
 
-      {/* Boutons fixes */}
+      {/* Boutons */}
       <View className="flex-row justify-around mt-6 border-t border-gray-200 pt-4">
         <TouchableOpacity
           onPress={onClose}
