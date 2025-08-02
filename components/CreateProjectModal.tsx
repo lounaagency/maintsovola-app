@@ -144,12 +144,12 @@ const CreateProjectModal = ({ project, onClose, userProfile }: Props) => {
     nbCultures: selectedCultures.length,
     dureeTotale: Math.max(
       ...cultures
-        .filter(c => selectedCultures.includes(c.id))
+        .filter(c => selectedCultures.includes(c.id_culture))
         .map(c => daysBetween(c.create_at, c.edit_at)),
       0
     ),
     coutTotal: cultures
-      .filter(c => selectedCultures.includes(c.id))
+      .filter(c => selectedCultures.includes(c.id_culture))
       .reduce((acc, c) => acc + (c.cout_ha ?? 0), 0),
   };
 
@@ -183,7 +183,7 @@ const CreateProjectModal = ({ project, onClose, userProfile }: Props) => {
   };
 
   const handleSubmit = async () => {
-    const culturesToSend = cultures.filter(c => selectedCultures.includes(c.id));
+    const culturesToSend = cultures.filter(c => selectedCultures.includes(c.id_culture));
 
     const payload = {
       titre,
@@ -276,10 +276,10 @@ const CreateProjectModal = ({ project, onClose, userProfile }: Props) => {
       <View className="mb-4">
         <Text className="text-lg font-semibold text-gray-700 mb-2">Cultures</Text>
         {cultures.map(c => (
-        <View key={c.id} className="mb-1">
+        <View key={c.id_culture} className="mb-1">
           <Checkbox
-            checked={selectedCultures.includes(c.id)}
-            onPress={() => toggleCulture(c.id)}
+            checked={selectedCultures.includes(c.id_culture)}
+            onPress={() => toggleCulture(c.id_culture)}
             label={c.nom_culture ?? ''}
           />
         </View>
@@ -315,9 +315,9 @@ const CreateProjectModal = ({ project, onClose, userProfile }: Props) => {
           <View className="mt-2">
             <Text className="font-bold">Détail :</Text>
             {cultures
-              .filter(c => selectedCultures.includes(c.id))
+              .filter(c => selectedCultures.includes(c.id_culture))
               .map(c => (
-                <Text key={c.id} className="text-sm">
+                <Text key={c.id_culture} className="text-sm">
                   - {c.nom_culture}: {daysBetween(c.create_at, c.edit_at)} j /{' '}
                   {c.cout_ha?.toLocaleString()} Ar
                 </Text>
