@@ -1,4 +1,4 @@
-import React, { useState ,useEffect} from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -66,13 +66,15 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
     userRole === 'superviseur' ||
     (userRole === 'simple' && terrain.id_tantsaha === user?.id && !terrain.statut);
 
-    const handlePhotoGalleryOpen = () => {
+  const handlePhotoGalleryOpen = () => {
     console.log('🔍 Clic sur Voir toutes (photos)', { photosLength: photos.length });
     setPhotoGalleryOpen(true);
   };
 
   const handleValidationPhotoGalleryOpen = () => {
-    console.log('🔍 Clic sur Voir toutes (validation)',{ validationPhotosLength: validationPhotos.length });
+    console.log('🔍 Clic sur Voir toutes (validation)', {
+      validationPhotosLength: validationPhotos.length,
+    });
     setValidationPhotoGalleryOpen(true);
   };
 
@@ -108,7 +110,10 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
     const coordinates = getPolygonCoordinates();
     if (coordinates.length > 0) {
       const center = coordinates.reduce(
-        (acc: { latitude: number; longitude: number }, coord: { latitude: number; longitude: number }) => ({
+        (
+          acc: { latitude: number; longitude: number },
+          coord: { latitude: number; longitude: number }
+        ) => ({
           latitude: acc.latitude + coord.latitude,
           longitude: acc.longitude + coord.longitude,
         }),
@@ -133,13 +138,13 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
     if (typeof terrain.photos === 'string') {
       return terrain.photos
         .split(',')
-        .map(p => p.trim())
-        .filter(p => p !== '' && p !== null && p !== undefined);
+        .map((p) => p.trim())
+        .filter((p) => p !== '' && p !== null && p !== undefined);
     }
-    
+
     // Si c'est déjà un tableau
     if (Array.isArray(terrain.photos)) {
-      return terrain.photos.filter(p => p && p.trim && p.trim() !== '');
+      return terrain.photos.filter((p) => p && p.trim && p.trim() !== '');
     }
 
     return [];
@@ -153,13 +158,13 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
     if (typeof terrain.photos_validation === 'string') {
       return terrain.photos_validation
         .split(',')
-        .map(p => p.trim())
-        .filter(p => p !== '' && p !== null && p !== undefined);
+        .map((p) => p.trim())
+        .filter((p) => p !== '' && p !== null && p !== undefined);
     }
-    
+
     // Si c'est déjà un tableau
     if (Array.isArray(terrain.photos_validation)) {
-      return terrain.photos_validation.filter(p => p && p.trim && p.trim() !== '');
+      return terrain.photos_validation.filter((p) => p && p.trim && p.trim() !== '');
     }
 
     return [];
@@ -169,7 +174,6 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
   const validationPhotos = getValidationPhotos();
 
   // FONCTIONS CORRIGÉES pour l'ouverture des galeries
-  
 
   const handleDelete = async () => {
     if (!user) return;
@@ -238,6 +242,8 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
       </AlertDialog>
     );
   }
+
+  console.log(JSON.stringify(terrain));
 
   return (
     <>
@@ -373,8 +379,8 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
                     )}
                   </View>
                 </View>
-                  {/* SECTION PHOTOS CORRIGÉE */}
-                  {/*(
+                {/* SECTION PHOTOS CORRIGÉE */}
+                {/*(
                     <View style={styles.card}>
                       <View style={styles.cardContent}>
                         <View style={styles.photoHeader}>
@@ -497,14 +503,14 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
 
           <View style={styles.footer}>
             {canDelete && (
-              <Button 
-                variant="destructive" 
-                onPress={() => setIsDeleteConfirmOpen(true)} 
-                style={{ flex: 1, marginRight: 8 }} 
+              <Button
+                variant="destructive"
+                onPress={() => setIsDeleteConfirmOpen(true)}
+                style={{ flex: 1, marginRight: 8 }}
                 title="Supprimer"
               />
             )}
-            <Button variant="outline" onPress={onClose} style={{ flex: 1 }} title="Fermer"/>
+            <Button variant="outline" onPress={onClose} style={{ flex: 1 }} title="Fermer" />
           </View>
         </View>
       </Modal>
