@@ -28,6 +28,7 @@ export default function TerrainScreen() {
   const { user, profile } = useAuth();
 
   const userRole = profile?.nom_role?.toLowerCase() || 'simple';
+  console.log(userRole)
 
   useEffect(() => {
     if (!user) {
