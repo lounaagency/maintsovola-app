@@ -216,8 +216,10 @@ const AlertDialogAction = ({
         className ? StyleSheet.flatten([buttonVariants(), parseStyleString(className)]) : {},
       ]}
       {...props}
+      
     >
       {children}
+      
     </TouchableOpacity>
   );
 };

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/terrain/Button";
 import * as ImagePicker from 'expo-image-picker'
 import { MaterialIcons } from '@expo/vector-icons';
 import { TerrainData } from "@/types/terrain";
+import { useEffect } from "react";
 
 interface ValidationFormProps {
   validationPhotos: any[];
@@ -28,6 +29,18 @@ const ValidationForm: React.FC<ValidationFormProps> = ({
 }) => {
   const form = useFormContext();
 
+  // Request permission to access the gallery
+  const requestPermission = async () => {
+  const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+  if (status !== 'granted') {
+    alert('Permission refusée pour accéder à la galerie.');
+  }
+  };
+  useEffect(() => {
+    requestPermission();
+  }, []);
+
+  // Function to pick images from the gallery and update state
   const pickImages = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
@@ -37,10 +50,35 @@ const ValidationForm: React.FC<ValidationFormProps> = ({
 
     if (!result.canceled) {
       const newPhotos = result.assets;
+      console.log('Photos sélectionnées:', newPhotos);
       setValidationPhotos(prev => [...prev, ...newPhotos]);
       setPhotoValidationUrls(prev => [...prev, ...newPhotos.map(photo => photo.uri)]);
+    } else {
+      console.log('Sélection annulée');
     }
   };
+
+    // Function to handle file selection and update state
+  const handleFileChange = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      const selectedPhotos = result.assets.map(asset => ({
+        uri: asset.uri,
+        type: asset.type || 'image/jpeg',
+      }));
+      setValidationPhotos(prevPhotos => [...prevPhotos, ...selectedPhotos]);
+      
+      const previewUrls = result.assets.map(asset => asset.uri);
+      setPhotoValidationUrls(prevUrls => [...prevUrls, ...previewUrls]);
+    }
+  };
+
+  // Function to remove a photo by index
 
   const removePhoto = (index: number) => {
     setValidationPhotos(prev => prev.filter((_, i) => i !== index));
@@ -164,7 +202,7 @@ const ValidationForm: React.FC<ValidationFormProps> = ({
           <Button 
             variant="outline" 
             size="sm"
-            onPress={pickImages}
+            onPress={handleFileChange}
             icon={<MaterialIcons name="cloud-upload" size={16} color="black" />}
             title="Ajouter des photos"
           />

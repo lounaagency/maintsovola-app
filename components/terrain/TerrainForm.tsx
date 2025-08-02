@@ -20,6 +20,9 @@ import { useToast } from '../ui/terrain/use-toast';
 import ValidationForm from './ValidationForm';
 import TerrainFormFields from './TerrainFormFields';
 import { sendNotification } from '@/types/notification';
+import * as Network from 'expo-network';
+import * as FileSystem from 'expo-file-system';
+import { Buffer } from 'buffer';
 
 interface TerrainFormProps {
   initialData?: TerrainData;
@@ -79,15 +82,16 @@ const TerrainForm: React.FC<TerrainFormProps> = ({
   const [polygonCoordinates, setPolygonCoordinates] = useState<
     { latitude: number; longitude: number }[]
   >([]);
-  const [validationPhotos, setValidationPhotos] = useState<any[]>([]);
+  // const [validationPhotos, setValidationPhotos] = useState<any[]>([]);
   const [photoValidationUrls, setPhotoValidationUrls] = useState<string[]>([]);
-  const [photos, setPhotos] = useState<any[]>([]);
+  const [photos, setPhotos] = useState<{ uri: string; type?: string }[]>([]);
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [overlapTerrains, setOverlapTerrains] = useState<TerrainData[] | null>(null);
   const [checkingOverlap, setCheckingOverlap] = useState(false);
   const [isEditMode, setIsEditMode] = useState(!!initialData);
   const { toast } = useToast();
+  const [validationPhotos, setValidationPhotos] = useState<{ uri: string; type?: string }[]>([]);
 
   const formSchema = isValidationMode ? validationSchema : terrainSchema;
 
@@ -171,53 +175,88 @@ const TerrainForm: React.FC<TerrainFormProps> = ({
     }
   }, [initialData]);
 
-  const uploadPhotos = async (
-    photos: any[],
-    folder: string = 'terrain-photos'
-  ): Promise<string[]> => {
-    if (photos.length === 0) return [];
 
+  const uploadPhotos = async (photos: { uri: string; type?: string }[], folder: string = 'terrain-photos'): Promise<string[]> => {
+    if (photos.length === 0) return [];
+    
     setIsUploading(true);
     const uploadedUrls: string[] = [];
-
+    
     try {
       for (const photo of photos) {
-        // In React Native, photos will typically be objects with uri property
-        const uri = photo.uri || photo;
-        const fileExt = uri.split('.').pop();
-        const fileName = `terrain-${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
-        const filePath = `${folder}/${fileName}`;
-
-        // Convert the photo to blob for upload
-        const response = await fetch(uri);
-        const blob = await response.blob();
-
-        const { error: uploadError } = await supabase.storage
-          .from('project-photos')
-          .upload(filePath, blob);
-
-        if (uploadError) {
-          console.error('Error uploading photo:', uploadError);
+        const uri = photo.uri;
+        console.log('URI de la photo:', uri); // Pour déboguer
+        
+        // Vérifier si le fichier existe
+        const fileInfo = await FileSystem.getInfoAsync(uri);
+        if (!fileInfo.exists) {
+          console.error('Le fichier n\'existe pas:', uri);
           continue;
         }
-
+        
+        // Lire le fichier en base64
+        const base64 = await FileSystem.readAsStringAsync(uri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        
+        // Convertir base64 en Uint8Array
+        const buffer = Buffer.from(base64, 'base64');
+        const fileData = new Uint8Array(buffer);
+        
+        // Générer un nom de fichier unique
+        const fileExt = uri.split('.').pop() || 'jpg'; // Par défaut à 'jpg' si pas d'extension
+        const fileName = `terrain-${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+        const filePath = `${folder}/${fileName}`;
+        
+        // Uploader vers Supabase
+        const { error: uploadError } = await supabase.storage
+          .from('project-photos')
+          .upload(filePath, fileData, {
+            contentType: photo.type || 'image/jpeg', // Type MIME par défaut
+          });
+          
+        if (uploadError) {
+          console.error('Erreur lors de l\'upload:', uploadError);
+          toast({
+            title: 'Erreur',
+            description: `Échec du téléchargement: ${uploadError.message}`,
+            variant: 'error',
+          });
+          continue;
+        }
+        
+        // Récupérer l’URL publique
         const { data: publicUrlData } = supabase.storage
           .from('project-photos')
           .getPublicUrl(filePath);
-
-        if (publicUrlData) {
+          
+        if (publicUrlData && publicUrlData.publicUrl) {
           uploadedUrls.push(publicUrlData.publicUrl);
+          console.log('URL publique:', publicUrlData.publicUrl); // Pour déboguer
+        } else {
+          console.error('Impossible de récupérer l\'URL publique pour', fileName);
         }
       }
-
+      
+      console.log('URLs téléchargées:', uploadedUrls); // Pour déboguer
       return uploadedUrls;
     } catch (error) {
-      console.error('Error in photo upload process:', error);
+      console.error('Erreur dans le processus d\'upload:', error);
+      toast({
+        title: 'Erreur',
+        description:
+          'Échec du téléchargement des photos: ' +
+          (error && typeof error === 'object' && 'message' in error
+            ? (error as { message?: string }).message
+            : 'Erreur inconnue'),
+        variant: 'error',
+      });
       return [];
     } finally {
       setIsUploading(false);
     }
-  };
+};
+
 
   const checkPolygonOverlap = async (geojson: any, idToOmit?: number) => {
     setCheckingOverlap(true);
@@ -320,10 +359,12 @@ const TerrainForm: React.FC<TerrainFormProps> = ({
       console.log(terrainData);
 
       if (isValidationMode) {
+        console.log('Photos à télécharger:', validationPhotos);
         const uploadedValidationPhotos = await uploadPhotos(
           validationPhotos,
           'terrain-validation-photos'
         );
+        console.log('Photos téléchargées:', uploadedValidationPhotos);
 
         const existingValidationPhotoUrls = photoValidationUrls.filter(
           (url) => !url.startsWith('file:')
@@ -332,13 +373,10 @@ const TerrainForm: React.FC<TerrainFormProps> = ({
           ...existingValidationPhotoUrls,
           ...uploadedValidationPhotos,
         ];
+        console.log('Toutes les URLs de validation:', allValidationPhotoUrls);
 
         terrainData.photos_validation = allValidationPhotoUrls.join(',');
-        terrainData.statut = data.validation_decision === 'valider';
-
-        if (terrainData.date_validation && typeof terrainData.date_validation !== 'string') {
-          terrainData.date_validation = String(terrainData.date_validation);
-        }
+        console.log('terrainData final:', terrainData);
 
         const { error } = await supabase
           .from('terrain')
@@ -353,44 +391,17 @@ const TerrainForm: React.FC<TerrainFormProps> = ({
           .eq('id_terrain', initialData?.id_terrain || 0);
 
         if (error) throw error;
-
-        if (initialData?.id_tantsaha) {
-          await sendNotification(
-            supabase,
-            userId,
-            [{ id_utilisateur: initialData.id_tantsaha }],
-            data.validation_decision === 'valider' ? 'Terrain validé' : 'Terrain rejeté',
-            `Votre terrain ${initialData.nom_terrain} a été ${data.validation_decision === 'valider' ? 'validé' : 'rejeté'}`,
-            data.validation_decision === 'valider' ? 'success' : 'warning',
-            'terrain',
-            initialData.id_terrain
-          );
-        }
-
-        toast({
-          title: 'Succès',
-          description: `Terrain ${data.validation_decision === 'valider' ? 'validé' : 'rejeté'} avec succès`,
-          variant: 'success',
-        });
-
-        if (onSubmitSuccess) {
-          onSubmitSuccess({
-            ...initialData!,
-            photos_validation: terrainData.photos_validation,
-            statut: terrainData.statut,
-            date_validation: terrainData.date_validation,
-            rapport_validation: terrainData.rapport_validation,
-            validation_decision: terrainData.validation_decision,
-            surface_validee: terrainData.surface_validee,
-          });
-        }
       } else {
+        console.log('Photos à télécharger:', photos);
         const uploadedPhotoUrls = await uploadPhotos(photos);
+        console.log('Photos téléchargées:', uploadedPhotoUrls);
 
         const existingPhotoUrls = photoUrls.filter((url) => !url.startsWith('file:'));
         const allPhotoUrls = [...existingPhotoUrls, ...uploadedPhotoUrls];
+        console.log('Toutes les URLs de photos:', allPhotoUrls);
 
         terrainData.photos = allPhotoUrls.join(',');
+        console.log('terrainData final:', terrainData);
 
         if (initialData?.id_terrain) {
           terrainData.statut = initialData.statut;

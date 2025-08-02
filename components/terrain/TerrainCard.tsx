@@ -28,6 +28,7 @@ import { Pencil, Trash2, Mail, User, MapPin, Calendar, Check, X, RefreshCw } fro
 import UserAvatar from 'components/terrain/UserAvatar';
 import { supabase } from 'integrations/supabase/client';
 import Toast from 'react-native-toast-message';
+import { white } from 'react-native-paper/lib/typescript/styles/themes/v2/colors';
 
 interface TerrainCardProps {
   isOpen: boolean;
@@ -183,11 +184,11 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isLoading} onPress={onClose}>
+            <AlertDialogCancel disabled={isLoading} onPress={onClose} style={styles.cancelButton}>
               <Text>Annuler</Text>
             </AlertDialogCancel>
             <AlertDialogAction disabled={isLoading} onPress={handleDelete} style={styles.destructiveButton}>
-              <Text>{isLoading ? 'Suppression...' : 'Supprimer'}</Text>
+              <Text style={{color:'white'}}>{isLoading ? 'Suppression...' : 'Supprimer'}</Text>
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -435,9 +436,11 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
             <AlertDialogCancel disabled={isLoading} onPress={() => setIsDeleteConfirmOpen(false)}>
               <Text>Annuler</Text>
             </AlertDialogCancel>
-            <AlertDialogAction disabled={isLoading} onPress={handleDelete} style={styles.destructiveButton}>
+            <AlertDialogAction disabled={isLoading} onPress={handleDelete} style={styles.destructiveButton} >
+              
               <Text>{isLoading ? 'Suppression...' : 'Supprimer'}</Text>
             </AlertDialogAction>
+            
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
@@ -594,6 +597,15 @@ const styles = StyleSheet.create({
   },
   destructiveButton: {
     backgroundColor: '#EF4444',
+    padding: 10,
+    borderWidth: 1,
+    borderRadius: 10,
+  },
+  cancelButton: {
+    backgroundColor: '#faf8f8ff',
+    padding: 10,
+    borderWidth: 1,
+    borderRadius: 10
   },
   overlay: {
     position: 'absolute',

@@ -67,6 +67,17 @@ const TerrainFormFields: React.FC<TerrainFormFieldsProps> = ({
   const [filteredDistricts, setFilteredDistricts] = useState<District[]>([]);
   const [filteredCommunes, setFilteredCommunes] = useState<Commune[]>([]);
 
+  // Fonction pour demander la permission d'accéder à la galerie
+  const requestPermission = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      alert('Permission refusée pour accéder à la galerie.');
+    }
+  };
+  useEffect(() => {
+    requestPermission();
+  }, []);
+
   // Chargement initial des données
   useEffect(() => {
     const fetchData = async () => {
@@ -123,7 +134,7 @@ const TerrainFormFields: React.FC<TerrainFormFieldsProps> = ({
   // Gestion des photos
   const pickImages = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes:   ImagePicker.MediaTypeOptions.Images, // Uncomment if using expo-image-picker
       allowsMultipleSelection: true,
       quality: 0.8,
     });
@@ -134,7 +145,26 @@ const TerrainFormFields: React.FC<TerrainFormFieldsProps> = ({
       setPhotoUrls([...photoUrls, ...newPhotos.map((img) => img.uri)]);
     }
   };
+  //Nouvelle Gestion de Photo
+  const handleFileChange = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 1,
+    });
 
+    if (!result.canceled) {
+      const selectedPhotos = result.assets.map(asset => ({
+        uri: asset.uri,
+        type: asset.type || 'image/jpeg',
+      }));
+      setPhotos([...photos, ...selectedPhotos]);
+      const previewUrls = result.assets.map(asset => asset.uri);
+      setPhotoUrls([...photoUrls, ...previewUrls]);
+    }
+  };
+
+// Suppression d'une photo
   const removePhoto = (index: number) => {
     const newPhotos = [...photos];
     const newPhotoUrls = [...photoUrls];
@@ -259,7 +289,7 @@ const TerrainFormFields: React.FC<TerrainFormFieldsProps> = ({
       <View style={styles.field}>
         <View style={styles.photoHeader}>
           <Text style={styles.label}>Photos du terrain</Text>
-          <Button onPress={pickImages} icon="image-plus">
+          <Button onPress={handleFileChange} icon="image-plus">
             Ajouter des photos
           </Button>
         </View>
