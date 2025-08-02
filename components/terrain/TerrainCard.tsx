@@ -141,6 +141,33 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
     }
   };
 
+  const handleRefresh = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('terrain')
+        .select('*')
+        .eq('id_terrain', terrain.id_terrain ?? 0)
+        .single();
+      if (error) throw error;
+      setTerrain(data as TerrainData);
+      Toast.show({
+        type: 'success',
+        text1: 'Succès',
+        text2: 'Données du terrain rafraîchies',
+      });
+    } catch (error: any) {
+      console.error('Erreur lors du rafraîchissement du terrain:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Erreur',
+        text2: `Erreur: ${error.message}`,
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleOpenChange = (open: boolean) => {
     if (!open) onClose();
   };

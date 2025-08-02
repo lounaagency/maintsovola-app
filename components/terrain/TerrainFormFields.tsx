@@ -18,6 +18,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useFormContext } from 'react-hook-form';
 import RNPickerSelect from 'react-native-picker-select';
 import TerrainMap from './TerrainMap';
+import { TerrainData } from '~/types/Terrain';
 
 interface Region {
   id_region: number;
@@ -43,6 +44,10 @@ interface TerrainFormFieldsProps {
   setPhotoUrls: (urls: string[]) => void;
   photos: any[];
   setPhotos: (photos: any[]) => void;
+  polygonCoordinates: { latitude: number; longitude: number }[];
+  setPolygonCoordinates: React.Dispatch<
+    React.SetStateAction<{ latitude: number; longitude: number }[]>
+  >;
 }
 
 const TerrainFormFields: React.FC<TerrainFormFieldsProps> = ({
@@ -52,6 +57,8 @@ const TerrainFormFields: React.FC<TerrainFormFieldsProps> = ({
   setPhotoUrls,
   photos,
   setPhotos,
+  polygonCoordinates,
+  setPolygonCoordinates,
 }) => {
   const form = useFormContext();
   const [regions, setRegions] = useState<Region[]>([]);
@@ -153,15 +160,6 @@ const TerrainFormFields: React.FC<TerrainFormFieldsProps> = ({
               key: agriculteur.id_utilisateur,
             }))}
           />
-          {/* <Select
-            value={form.watch('id_tantsaha')}
-            onValueChange={(value) => form.setValue('id_tantsaha', value)}>
-            {agriculteurs.map((agriculteur) => (
-              <SelectItem key={agriculteur.id_utilisateur} value={agriculteur.id_utilisateur}>
-                {`${agriculteur.nom} ${agriculteur.prenoms || ''}`}
-              </SelectItem>
-            ))}
-          </Select> */}
         </View>
       )}
 
@@ -193,19 +191,6 @@ const TerrainFormFields: React.FC<TerrainFormFieldsProps> = ({
             key: region.id_region,
           }))}
         />
-        {/* <Select
-          value={form.watch('id_region')}
-          onValueChange={(value) => {
-            form.setValue('id_region', value);
-            form.setValue('id_district', '');
-            form.setValue('id_commune', '');
-          }}>
-          {regions.map((region) => (
-            <SelectItem key={region.id_region} value={region.id_region.toString()}>
-              {region.nom_region}
-            </SelectItem>
-          ))}
-        </Select> */}
       </View>
 
       <View style={styles.field}>
@@ -223,18 +208,6 @@ const TerrainFormFields: React.FC<TerrainFormFieldsProps> = ({
             key: district.id_district,
           }))}
         />
-        {/* <Select
-          value={form.watch('id_district')}
-          onValueChange={(value) => {
-            form.setValue('id_district', value);
-            form.setValue('id_commune', '');
-          }}>
-          {filteredDistricts.map((district) => (
-            <SelectItem key={district.id_district} value={district.id_district.toString()}>
-              {district.nom_district}
-            </SelectItem>
-          ))}
-        </Select> */}
       </View>
 
       <View style={styles.field}>
@@ -249,15 +222,6 @@ const TerrainFormFields: React.FC<TerrainFormFieldsProps> = ({
             key: commune.id_commune,
           }))}
         />
-        {/* <Select
-          value={form.watch('id_commune')}
-          onValueChange={(value) => form.setValue('id_commune', value)}>
-          {filteredCommunes.map((commune) => (
-            <SelectItem key={commune.id_commune} value={commune.id_commune.toString()}>
-              {commune.nom_commune}
-            </SelectItem>
-          ))}
-        </Select> */}
       </View>
 
       {/* Surface */}
@@ -314,7 +278,7 @@ const TerrainFormFields: React.FC<TerrainFormFieldsProps> = ({
         )}
       </View>
       <View style={styles.field}>
-        <TerrainMap />
+        <TerrainMap drawnCoords={polygonCoordinates} setDrawnCoords={setPolygonCoordinates} />
       </View>
     </ScrollView>
   );
