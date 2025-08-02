@@ -305,27 +305,6 @@ const CreateProjectModal = ({ project, onClose, userProfile }: Props) => {
         ) : null}
       </View>
 
-      {/* Résumé */}
-      <View className="bg-gray-100 p-4 rounded-lg mb-4">
-        <Text className="font-bold text-green-700 mb-2">Résumé du projet</Text>
-        <Text>🌱 Cultures sélectionnées : {summary.nbCultures}</Text>
-        <Text>⏳ Durée estimée : {summary.dureeTotale} jours</Text>
-        <Text>💰 Coût total : {summary.coutTotal.toLocaleString()} Ar</Text>
-        {selectedCultures.length > 0 && (
-          <View className="mt-2">
-            <Text className="font-bold">Détail :</Text>
-            {cultures
-              .filter(c => selectedCultures.includes(c.id_culture))
-              .map(c => (
-                <Text key={c.id_culture} className="text-sm">
-                  - {c.nom_culture}: {daysBetween(c.create_at, c.edit_at)} j /{' '}
-                  {c.cout_ha?.toLocaleString()} Ar
-                </Text>
-              ))}
-          </View>
-        )}
-      </View>
-
       {/* Boutons */}
       <View className="flex-row justify-around mt-6 border-t border-gray-200 pt-4">
         <TouchableOpacity
