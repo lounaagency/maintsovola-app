@@ -1,32 +1,35 @@
-import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  RefreshControl,
-  Dimensions,
-  StatusBar,
-  StyleSheet,
-  FlatList,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useNavigation } from '@react-navigation/native';
 import { BlurView } from 'expo-blur';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
+import { ArrowRight, ChevronRight, FileText, MapPin, TrendingUp, Users } from 'lucide-react-native';
+import React, { useEffect, useState } from 'react';
+import {
+  Dimensions,
+  FlatList,
+  Image,
+  RefreshControl,
+  ScrollView,
+  StatusBar,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import Animated, {
-  FadeInUp,
   FadeInLeft,
   FadeInRight,
-  useSharedValue,
+  FadeInUp,
   useAnimatedStyle,
+  useSharedValue,
   withTiming,
 } from 'react-native-reanimated';
-import { TrendingUp, Users, MapPin, FileText, ArrowRight, ChevronRight } from 'lucide-react-native';
-import { supabase } from '../lib/data';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import logo from '../assets/maintsovola_logo_pm.png';
-import { useRouter } from "expo-router"
+import { supabase } from '../lib/data';
+
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { useAuth } from '~/contexts/AuthContext';
 
 const { width } = Dimensions.get('window');
 
@@ -101,7 +104,6 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 16,
     borderRadius: 12,
-
   },
   statCardInner: {
     flexDirection: 'row',
@@ -463,7 +465,9 @@ const StatsSkeleton: React.FC = () => (
     {Array.from({ length: 4 }).map((_, index) => (
       <View key={index} style={styles.statCard}>
         <View style={[styles.statCardInner, styles.skeletonCard]}>
-          <View style={[styles.statIconContainer, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]} />
+          <View
+            style={[styles.statIconContainer, { backgroundColor: 'rgba(255, 255, 255, 0.2)' }]}
+          />
           <View style={{ flex: 1 }}>
             <View style={[styles.skeletonLine, { height: 12, marginBottom: 8 }]} />
             <View style={[styles.skeletonLine, { height: 24, width: '75%' }]} />
@@ -496,9 +500,6 @@ const ProjectCarouselSkeleton: React.FC<{ count: number }> = ({ count }) => (
     />
   </View>
 );
-
-import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
-
 
 type RootStackParamList = {
   Feed: { culture?: string } | undefined;
@@ -537,6 +538,15 @@ const HomeScreen: React.FC = () => {
   const animatedStyle = useAnimatedStyle(() => ({
     opacity: withTiming(fadeAnim.value, { duration: 500 }),
   }));
+
+  const { user } = useAuth();
+  useEffect(() => {
+    if (user) {
+      router.replace('/feed'); // ou '/(tabs)/feed'
+    } else {
+      router.replace('/(auth)/login');
+    }
+  }, [user]);
 
   useEffect(() => {
     fadeAnim.value = 1;
@@ -752,7 +762,7 @@ const HomeScreen: React.FC = () => {
     value: string | number,
     color: string,
     index: number,
-    unity: string|undefined
+    unity: string | undefined
   ) => (
     <Animated.View key={index} entering={FadeInUp.delay(index * 100)} style={styles.statCard}>
       <BlurView intensity={20} style={styles.statCardInner}>
@@ -771,14 +781,8 @@ const HomeScreen: React.FC = () => {
 
   // Nouveau composant pour le rendu des projets vedettes dans le carrousel
   const renderFeaturedProject = ({ item, index }: { item: FeaturedProject; index: number }) => (
-    <Animated.View
-      entering={FadeInLeft.delay(index * 150)}
-      style={styles.projectCard}>
-      <Image
-        source={{ uri: item.image }}
-        style={styles.projectImage}
-        resizeMode="cover"
-      />
+    <Animated.View entering={FadeInLeft.delay(index * 150)} style={styles.projectCard}>
+      <Image source={{ uri: item.image }} style={styles.projectImage} resizeMode="cover" />
       <View style={styles.projectInfo}>
         <Text style={styles.projectTitle}>{item.title}</Text>
         <Text style={styles.projectDescription} numberOfLines={2}>
@@ -791,16 +795,16 @@ const HomeScreen: React.FC = () => {
             <Text style={styles.progressTarget}>{item.target}</Text>
           </View>
           <View style={styles.progressBar}>
-            <View
-              style={[styles.progressFill, { width: `${item.progress}%` }]}
-            />
+            <View style={[styles.progressFill, { width: `${item.progress}%` }]} />
           </View>
           <Text style={styles.progressText}>{item.progress}% financé</Text>
         </View>
 
         <TouchableOpacity
           style={styles.projectButton}
-          onPress={() => router.push({pathname: '/(auth)/login', params: { id: item.id.toString() }})}>
+          onPress={() =>
+            router.push({ pathname: '/(auth)/login', params: { id: item.id.toString() } })
+          }>
           <Text style={styles.projectButtonText}>Voir le projet</Text>
           <ArrowRight size={16} color="white" />
         </TouchableOpacity>
@@ -809,16 +813,19 @@ const HomeScreen: React.FC = () => {
   );
 
   const renderPopularCulture = (culture: PopularCulture, index: number) => (
-    <Animated.View key={culture.id} entering={FadeInUp.delay(index * 100)} style={styles.cultureCard}>
+    <Animated.View
+      key={culture.id}
+      entering={FadeInUp.delay(index * 100)}
+      style={styles.cultureCard}>
       <TouchableOpacity
         style={{ alignItems: 'center' }}
-        onPress={() => router.navigate({pathname: '/(auth)/login', params: { culture: culture.name.toString() }})}>
-
-        <Image
-          source={{ uri: culture.image }}
-          style={styles.cultureImage}
-          resizeMode="cover"
-        />
+        onPress={() =>
+          router.navigate({
+            pathname: '/(auth)/login',
+            params: { culture: culture.name.toString() },
+          })
+        }>
+        <Image source={{ uri: culture.image }} style={styles.cultureImage} resizeMode="cover" />
         <Text style={styles.cultureName}>{culture.name}</Text>
         <Text style={styles.cultureCount}>{culture.count} projets</Text>
       </TouchableOpacity>
@@ -829,7 +836,9 @@ const HomeScreen: React.FC = () => {
     <Animated.View key={project.id} entering={FadeInRight.delay(index * 100)}>
       <TouchableOpacity
         style={styles.recentProjectItem}
-        onPress={() => router.navigate({pathname: '/(auth)/login', params: { id: project.id.toString() }})}>
+        onPress={() =>
+          router.navigate({ pathname: '/(auth)/login', params: { id: project.id.toString() } })
+        }>
         <View style={styles.recentProjectContent}>
           <View style={styles.recentProjectInfo}>
             <Text style={styles.recentProjectTitle}>{project.title}</Text>
@@ -865,7 +874,6 @@ const HomeScreen: React.FC = () => {
       <ScrollView
         style={{ flex: 1 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}>
-        
         {/* Hero Section */}
         <LinearGradient colors={['#10b981', '#059669']} style={styles.heroContainer}>
           <Animated.View style={animatedStyle}>
@@ -894,21 +902,37 @@ const HomeScreen: React.FC = () => {
               <StatsSkeleton />
             ) : (
               <View style={styles.statsContainer}>
-                {renderStatCard(Users, 'Utilisateurs actifs', stats.totalUsers, '#3b82f6', 0, undefined)}
+                {renderStatCard(
+                  Users,
+                  'Utilisateurs actifs',
+                  stats.totalUsers,
+                  '#3b82f6',
+                  0,
+                  undefined
+                )}
                 {renderStatCard(
                   FileText,
                   'Projets en financement',
                   stats.totalProjects,
                   '#f59e0b',
-                  1,undefined
+                  1,
+                  undefined
                 )}
-                {renderStatCard(MapPin, 'Hectares cultivés', stats.totalHectares, '#10b981', 2,undefined)}
+                {renderStatCard(
+                  MapPin,
+                  'Hectares cultivés',
+                  stats.totalHectares,
+                  '#10b981',
+                  2,
+                  undefined
+                )}
                 {renderStatCard(
                   TrendingUp,
                   'Total investissement',
                   stats.totalInvestment,
                   '#8b5cf6',
-                  3, 'Ar'
+                  3,
+                  'Ar'
                 )}
               </View>
             )}
@@ -975,7 +999,9 @@ const HomeScreen: React.FC = () => {
                 {Array.from({ length: 4 }).map((_, index) => (
                   <View key={index} style={styles.cultureCard}>
                     <View style={[styles.cultureImage, { backgroundColor: '#e5e7eb' }]} />
-                    <View style={[styles.skeletonLine, { height: 16, width: '75%', marginBottom: 8 }]} />
+                    <View
+                      style={[styles.skeletonLine, { height: 16, width: '75%', marginBottom: 8 }]}
+                    />
                     <View style={[styles.skeletonLine, { height: 12, width: '50%' }]} />
                   </View>
                 ))}
@@ -1036,9 +1062,7 @@ const HomeScreen: React.FC = () => {
           </View>
 
           {/* Call-to-Action */}
-          <Animated.View
-            entering={FadeInUp.delay(500)}
-            style={styles.finalCta}>
+          <Animated.View entering={FadeInUp.delay(500)} style={styles.finalCta}>
             <Text style={styles.finalCtaTitle}>Rejoignez notre communauté</Text>
             <Text style={styles.finalCtaSubtitle}>
               Que vous soyez investisseur ou agriculteur, Maintso Vola vous offre les outils
