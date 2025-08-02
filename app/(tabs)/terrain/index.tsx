@@ -27,7 +27,7 @@ const Header = ({ onCreateTerrain }: { onCreateTerrain: () => void }) => {
 export default function TerrainScreen() {
   const { user, profile } = useAuth();
 
-  const userRole = profile?.nom_role?.toLowerCase() || 'superviseur';
+  const userRole = profile?.nom_role?.toLowerCase() || 'simple';
   console.log(userRole)
 
   useEffect(() => {

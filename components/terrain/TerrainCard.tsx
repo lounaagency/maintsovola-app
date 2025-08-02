@@ -8,6 +8,7 @@ import {
   ScrollView,
   Image,
   Dimensions,
+  FlatList
 } from 'react-native';
 import { Polygon, UrlTile } from 'react-native-maps';
 import MapView from 'react-native-maps';
@@ -53,6 +54,8 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
   const [activeTab, setActiveTab] = useState('details');
   const [selectedPhoto, setSelectedPhoto] = useState<string | null>(null);
   const [terrain, setTerrain] = useState<TerrainData>(initialTerrain);
+  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState<number | null>(null);
+
 
   const canModify =
     userRole === 'admin' ||
@@ -195,6 +198,7 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
       </AlertDialog>
     );
   }
+  const currentImages = activeTab === 'details' ? photos : validationPhotos;
 
   return (
     <Modal visible={isOpen} animationType="slide" onRequestClose={onClose}>
@@ -310,7 +314,7 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
                       {photos.map((photo, index) => (
                         <TouchableOpacity
                           key={index}
-                          onPress={() => setSelectedPhoto(photo)}
+                          onPress={() => setSelectedPhotoIndex(index)}
                           style={styles.photoItem}
                         >
                           <Image
@@ -388,22 +392,33 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
           )}
         </ScrollView>
 
-        {selectedPhoto && (
+        {selectedPhotoIndex !== null && (
           <View style={styles.overlay}>
             <View style={styles.imageViewer}>
-              <ScrollView
-                maximumZoomScale={3}
-                minimumZoomScale={1}
-                contentContainerStyle={styles.scrollViewContent}
-              >
-                <Image
-                  source={{ uri: selectedPhoto }}
-                  style={styles.fullImage}
-                  resizeMode="contain"
-                />
-              </ScrollView>
+              <FlatList
+                horizontal
+                pagingEnabled
+                data={currentImages}
+                keyExtractor={(item, index) => index.toString()}
+                renderItem={({ item }) => (
+                  <View style={styles.scrollViewContent}>
+                    <Image
+                      source={{ uri: item }}
+                      style={styles.fullImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+                )}
+                initialScrollIndex={selectedPhotoIndex}
+                getItemLayout={(data, index) => ({
+                  length: Dimensions.get('window').width * 0.9,
+                  offset: Dimensions.get('window').width * 0.9 * index,
+                  index,
+                })}
+                showsHorizontalScrollIndicator={false}
+              />
               <TouchableOpacity
-                onPress={() => setSelectedPhoto(null)}
+                onPress={() => setSelectedPhotoIndex(null)}
                 style={styles.closeButton}
               >
                 <X size={24} color="#000" />
@@ -411,6 +426,7 @@ const TerrainCard: React.FC<TerrainCardProps> = ({
             </View>
           </View>
         )}
+
 
         <View style={styles.footer}>
           {canDelete && (
@@ -515,10 +531,16 @@ const styles = StyleSheet.create({
   detailValue: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexShrink: 1, // Permet au texte de s’adapter dans son container
+    // flexWrap: 'wrap',
   },
   detailText: {
     fontSize: 14,
     color: '#111827',
+    marginLeft: 8,
+    // flex: 1, // Permet au texte de s’adapter dans son
+    //  flexShrink: 1, // Permet au texte de s’adapter dans son container
+  // flexWrap: 'wrap',
   },
   textRight: {
     textAlign: 'right',

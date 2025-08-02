@@ -72,7 +72,6 @@ const ValidationForm: React.FC<ValidationFormProps> = ({
         type: asset.type || 'image/jpeg',
       }));
       setValidationPhotos(prevPhotos => [...prevPhotos, ...selectedPhotos]);
-      
       const previewUrls = result.assets.map(asset => asset.uri);
       setPhotoValidationUrls(prevUrls => [...prevUrls, ...previewUrls]);
     }
