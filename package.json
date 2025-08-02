@@ -23,6 +23,7 @@
     "eas-cli": "^16.17.3",
     "expo": "^53.0.20",
     "expo-blur": "~14.1.5",
+    "expo-checkbox": "^4.1.4",
     "expo-constants": "~17.1.4",
     "expo-haptics": "^14.1.4",
     "expo-image": "^2.4.0",
