@@ -2,14 +2,15 @@
 import { Plus, SearchIcon} from 'lucide-react-native';
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
+  Animated,
 } from 'react-native';
 import { useProjects } from '@/hooks/useProject';
 import type { ProjectData } from '@/type/projectInterface';
@@ -23,6 +24,69 @@ const colorCode = {
     "en cours": "#5de043",
     "terminé": "#2ce026",
   }
+
+/* ---------- Composant Skeleton Loading ---------- */
+const SkeletonBar = ({ width, height = 16, style = {} }: { width: number | string, height?: number, style?: any }) => {
+  const animatedValue = new Animated.Value(0);
+
+  // Animation de pulsation
+  const startAnimation = () => {
+    Animated.sequence([
+      Animated.timing(animatedValue, {
+        toValue: 1,
+        duration: 1000,
+        useNativeDriver: false,
+      }),
+      Animated.timing(animatedValue, {
+        toValue: 0,
+        duration: 1000,
+        useNativeDriver: false,
+      }),
+    ]).start(() => startAnimation());
+  };
+
+  useEffect(() => {
+    startAnimation();
+  }, []);
+
+  const backgroundColor = animatedValue.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['#e2e8f0', '#cbd5e1'],
+  });
+
+  return (
+    <Animated.View
+      style={[
+        {
+          height,
+          width,
+          backgroundColor,
+          borderRadius: 4,
+        },
+        style,
+      ]}
+    />
+  );
+};
+
+const ProjectCardSkeleton = () => {
+  return (
+    <View className="my-2 min-h-24 rounded-lg border border-gray-300 p-3">
+      <View className="flex-row justify-between">
+        <View className="flex-1">
+          {/* Titre du projet skeleton */}
+          <SkeletonBar width="70%" height={20} style={{ marginBottom: 8 }} />
+          {/* Nom de l'agriculteur skeleton */}
+          <SkeletonBar width="50%" height={14} />
+        </View>
+        <View className="justify-center items-end">
+          {/* Badge statut skeleton */}
+          <SkeletonBar width={80} height={24} style={{ borderRadius: 12 }} />
+        </View>
+      </View>
+    </View>
+  );
+};
 
 /* ---------- Carte projet ---------- */
 type ListTerrainProps = { item: ProjectData; selected: string };
@@ -64,7 +128,12 @@ const ListTerrain = ({ item, selected }: ListTerrainProps) => {
             </Text>
           </View>
           <View className="justify-end">
-            <Text className={`rounded-full border border-gray-200 px-2 text-sm`} style={{ backgroundColor: colorCode[item.statut as keyof typeof colorCode] }} >{item.statut}</Text>
+            <Text 
+              className={`rounded-full border border-gray-200 px-2 text-sm`} 
+              style={{ backgroundColor: colorCode[item.statut as keyof typeof colorCode] }}
+            >
+              {item.statut}
+            </Text>
           </View>
         </View>
       </TouchableOpacity>
@@ -83,10 +152,11 @@ type StatusSelectProps = {
   selected: string;
   setSelected: (s: string) => void;
 };
+
 const StatusSelect = ({ selected, setSelected }: StatusSelectProps) => {
   const styles = StyleSheet.create({
     scroll: { paddingHorizontal: 10 },
-    text: { fontSize: 14, color: '#000' },
+    text: { fontSize: 16, color: '#000' },
     selected: { color: '#009900', fontWeight: 'bold' },
   });
 
@@ -96,17 +166,30 @@ const StatusSelect = ({ selected, setSelected }: StatusSelectProps) => {
     { key: 'finance', label: 'En financement' },
     { key: 'en_prod', label: 'En production' },
     { key: 'termine', label: 'Terminés' },
-    {key: 'valide', label: 'Validés'}
+    { key: 'valide', label: 'Validés' }
   ];
 
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scroll}>
       {filters.map(({ key, label }) => (
         <TouchableOpacity key={key} onPress={() => setSelected(key)} className="mx-2">
-          <Text style={[styles.text, selected === key && styles.selected]}>{label}</Text>
+          <Text style={[styles.text, selected === key && styles.selected]} className='mb-2'>
+            {label}
+          </Text>
         </TouchableOpacity>
       ))}
     </ScrollView>
+  );
+};
+
+/* ---------- Skeleton pour la liste complète ---------- */
+const ProjectListSkeleton = () => {
+  return (
+    <View className="my-5 rounded-xl border border-gray-300 p-3">
+      {[...Array(4)].map((_, index) => (
+        <ProjectCardSkeleton key={index} />
+      ))}
+    </View>
   );
 };
 
@@ -117,7 +200,7 @@ export default function Project({isPass = false}: {isPass: boolean}) {
   }
 
   const [isSearchFocus, setIsSearchFocus] = useState(false);
-  const { projects, loading } = useProjects();
+  const { projects, loading, refetch } = useProjects();
   const [selected, setSelected] = useState('all');
   const [isVisibleAdd, setisVisibleAdd] = useState<boolean>(false)
 
@@ -126,18 +209,24 @@ export default function Project({isPass = false}: {isPass: boolean}) {
   const userProfile = profile?.nom_role?.toLocaleLowerCase() || 'simple';
   const userName = `${profile?.nom} ${profile?.prenoms}`;
 
-  // useEffect(() => {
-  //   if (!user || !profile) {
-  //     router.replace("/(auth)/login");
-  //   }
-  // })
+  useEffect(() => {
+    if (!user) {
+      router.replace("/(auth)/login");
+    }
+  })
 
-  // console.log(projects);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await refetch();
+    setRefreshing(false);
+  };
 
   return (
     <ScrollView className="px-5">
       <View className="mt-4">
-        <Text className="text-4xl font-extrabold">Projects</Text>
+        <Text className="text-4xl font-extrabold">Projets</Text>
         <Text className="text-xl text-gray-500">Gérez vos projets agricole ici</Text>
       </View>
 
@@ -165,27 +254,51 @@ export default function Project({isPass = false}: {isPass: boolean}) {
         </TouchableOpacity>
 
         <ModalAddStyled
-          project={projects[0]}
           isVisible={isVisibleAdd}
           onClose={() => setisVisibleAdd(false)}
           userProfile={{userProfile, userName}}
         />
-        
       </View>
 
       {/* Filtres */}
       <StatusSelect selected={selected} setSelected={setSelected} />
 
-      {loading && <ActivityIndicator size={30} color="#009800" className="mt-5" />}
-
-      {/* Liste */}
-      <FlatList
-        data={projects}
-        keyExtractor={(p) => String(p.id_projet)}
-        renderItem={({ item }) => <ListTerrain item={item} selected={selected} />}
-        scrollEnabled={false}
-        className="my-5 rounded-xl border border-gray-300 p-3"
-      />
+      {/* Affichage conditionnel : skeleton loading ou liste des projets */}
+      {loading ? (
+        <ProjectListSkeleton />
+      ) : (
+        <FlatList
+          data={projects}
+          keyExtractor={(p) => String(p.id_projet)}
+          renderItem={({ item }) => <ListTerrain item={item} selected={selected} />}
+          scrollEnabled={false}
+          className="my-5 rounded-xl border border-gray-300 p-3"
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={['#009800']} // Android
+              tintColor="#009800"  // iOS
+            />
+          }
+          ListEmptyComponent={() => (
+            <View className="p-8 items-center">
+              <Text className="text-gray-500 text-center text-lg">
+                Aucun projet trouvé
+              </Text>
+              <Text className="text-gray-400 text-center mt-2">
+                Créez des projets ...
+              </Text>
+              <TouchableOpacity 
+                className="mt-3 flex flex-row items-center justify-center rounded-full py-3"
+                onPress={() => setisVisibleAdd(true)}
+              >
+                <Plus color="#47a13d" />
+              </TouchableOpacity>
+            </View>
+          )}
+        />
+      )}
     </ScrollView>
   );
 }
