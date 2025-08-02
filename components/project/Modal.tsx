@@ -25,9 +25,9 @@ import {
 // import CreateProjectModal from "../CreateProjectModal";
 import { ProjectMilestonesModal } from "../ProjectMilestones";
 import { supabase } from "~/utils/supabase";
-import { CreateModal } from "../CreateModal";
 import { ProjectData } from "~/type/projectInterface";
 import { useProjectData } from "@/hooks/useProject";
+import CreateProjectModal from "../CreateProjectModal";
 
 const formatDate = (dateStr: string) =>
   new Date(dateStr).toLocaleDateString('fr-FR');
@@ -735,7 +735,7 @@ export const ModalAddStyled = ({ project, onClose, isVisible, userProfile }: Cre
       <View className="flex-1 justify-center bg-black/50 px-4">
         <View className="rounded-xl bg-white p-6 border border-zinc-500">
           <ScrollView>
-            <CreateModal project={project} onClose={onClose} userProfile={userProfile} />
+            <CreateProjectModal project={project} onClose={onClose} userProfile={userProfile} />
           </ScrollView>
         </View>
       </View>
