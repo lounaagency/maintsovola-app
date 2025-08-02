@@ -29,80 +29,6 @@ import { CreateModal } from "../CreateModal";
 import { ProjectData } from "~/type/projectInterface";
 import { useProjectData } from "@/hooks/useProject";
 
-// export const useProjectData = (projectId: number) => {
-//   const [project, setProject]   = useState<any>(null);
-//   const [investments, setInvestments] = useState<any[]>([]);
-//   const [jalons, setJalons]     = useState<any[]>([]);
-//   const [loading, setLoading]   = useState(true);
-//   const [error, setError]       = useState<string | null>(null);
-
-//   const fetchAll = async () => {
-//     setLoading(true);
-//     try {
-//       // 1) Projet
-//       const { data: p, error: e1 } = await supabase
-//         .from('projet')
-//         .select(`
-//           *,
-//           tantsaha:id_tantsaha(nom,prenoms,photo_profil),
-//           terrain:id_terrain(*),
-//           region:id_region(nom_region),
-//           district:id_district(nom_district),
-//           commune:id_commune(nom_commune),
-//           projet_culture(*,culture:id_culture(*))
-//         `)
-//         .eq('id_projet', projectId)
-//         .single();
-//       if (e1) throw e1;
-
-//       // 2) Investissements
-//       const { data: inv, error: e2 } = await supabase
-//       .from('investissement')
-//       .select(`
-//         *,
-//         utilisateur:investisseur(
-//           id,
-//           nom,
-//           prenoms,
-//           photo_profil
-//         )
-//       `)
-//       .eq('id_projet', projectId);
-//       if (e2) throw e2;
-
-//       // 3) Jalons
-//       const { data: jal, error: e3 } = await supabase
-//         .from('jalon_projet')
-//         .select(`*,jalon_agricole(*),culture:jalon_agricole(id_culture(*))`)
-//         .eq('id_projet', projectId)
-//         .order('date_previsionnelle', { ascending: true });
-//       if (e3) throw e3;
-
-//       setProject(p);
-//       setInvestments(inv ?? []);
-//       setJalons(jal ?? []);
-//     } catch (err: any) {
-//       setError(err.message);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   useEffect(() => { fetchAll(); }, [projectId]);
-
-//   return {
-//     project,
-//     investments,
-//     jalons,
-//     loading,
-//     error,
-//     refetchProject:   fetchAll,
-//     refetchInvestments: fetchAll,
-//     refetchJalons:    fetchAll,
-//     refetchAll:       fetchAll,
-//   };
-// };
-
 const formatDate = (dateStr: string) =>
   new Date(dateStr).toLocaleDateString('fr-FR');
 const formatCurrency = (amount: number) =>
@@ -579,6 +505,49 @@ export const ModalDetails = ({ projectId, isVisible, onClose, userProfile }: Mod
                   </Text>
                 </TouchableOpacity>
                 }
+                {canEdit && projects?.statut === "en attente" && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      Alert.alert(
+                        "Confirmation",
+                        "Voulez-vous valider ce projet et passer son statut à 'en cours' ?",
+                        [
+                          {
+                            text: "Annuler",
+                            style: "cancel",
+                            onPress: () => console.log("Mise à jour annulée"),
+                          },
+                          {
+                            text: "Valider",
+                            style: "default",
+                            onPress: async () => {
+                              try {
+                                const { data, error } = await supabase
+                                  .from('projet')
+                                  .update({ status: 'en cours' })
+                                  .eq('id', projects.id_projet);
+
+                                if (error) {
+                                  Alert.alert("Erreur", `Échec de la mise à jour: ${error.message}`);
+                                  return;
+                                }
+                                Alert.alert("Succès", "Le projet a été validé avec succès !");
+                                console.log("Mise à jour réussie:", data);
+                              } catch (err) {
+                                Alert.alert("Erreur", "Une erreur inattendue est survenue.");
+                                console.error(err);
+                              }
+                            },
+                          },
+                        ],
+                        { cancelable: true }
+                      );
+                    }}
+                    className="p-4 items-center bg-green-700 rounded-lg px-6"
+                  >
+                    <Text className="font-semibold">Valider</Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
               {/* Onglets */}
@@ -592,7 +561,7 @@ export const ModalDetails = ({ projectId, isVisible, onClose, userProfile }: Mod
                   <TouchableOpacity className="p-1" onPress={() => setFinJal(true)}>
                     <Text className={`text-2xl py-1 px-4 rounded-md w-full ${finJal && 'bg-white'}`}>
                       Jalons & Production
-                    </Text>
+                    </Text>Nou
                   </TouchableOpacity>
                 </View>
               </View>
