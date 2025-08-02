@@ -27,73 +27,81 @@ import { ProjectMilestonesModal } from "../ProjectMilestones";
 import { supabase } from "~/utils/supabase";
 import { CreateModal } from "../CreateModal";
 import { ProjectData } from "~/type/projectInterface";
-// import { useProjectData } from "~/hooks/use-project-data";
+import { useProjectData } from "@/hooks/useProject";
 
-export const useProjectData = (projectId: number) => {
-  const [project, setProject]   = useState<any>(null);
-  const [investments, setInvestments] = useState<any[]>([]);
-  const [jalons, setJalons]     = useState<any[]>([]);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState<string | null>(null);
+// export const useProjectData = (projectId: number) => {
+//   const [project, setProject]   = useState<any>(null);
+//   const [investments, setInvestments] = useState<any[]>([]);
+//   const [jalons, setJalons]     = useState<any[]>([]);
+//   const [loading, setLoading]   = useState(true);
+//   const [error, setError]       = useState<string | null>(null);
 
-  const fetchAll = async () => {
-    setLoading(true);
-    try {
-      // 1) Projet
-      const { data: p, error: e1 } = await supabase
-        .from('projet')
-        .select(`
-          *,
-          tantsaha:id_tantsaha(nom,prenoms,photo_profil),
-          terrain:id_terrain(*),
-          region:id_region(nom_region),
-          district:id_district(nom_district),
-          commune:id_commune(nom_commune),
-          projet_culture(*,culture:id_culture(*))
-        `)
-        .eq('id_projet', projectId)
-        .single();
-      if (e1) throw e1;
+//   const fetchAll = async () => {
+//     setLoading(true);
+//     try {
+//       // 1) Projet
+//       const { data: p, error: e1 } = await supabase
+//         .from('projet')
+//         .select(`
+//           *,
+//           tantsaha:id_tantsaha(nom,prenoms,photo_profil),
+//           terrain:id_terrain(*),
+//           region:id_region(nom_region),
+//           district:id_district(nom_district),
+//           commune:id_commune(nom_commune),
+//           projet_culture(*,culture:id_culture(*))
+//         `)
+//         .eq('id_projet', projectId)
+//         .single();
+//       if (e1) throw e1;
 
-      // 2) Investissements
-      const { data: inv, error: e2 } = await supabase
-        .from('investissement')
-        .select(`*,investisseur(*)`)
-        .eq('id_projet', projectId);
-      if (e2) throw e2;
+//       // 2) Investissements
+//       const { data: inv, error: e2 } = await supabase
+//       .from('investissement')
+//       .select(`
+//         *,
+//         utilisateur:investisseur(
+//           id,
+//           nom,
+//           prenoms,
+//           photo_profil
+//         )
+//       `)
+//       .eq('id_projet', projectId);
+//       if (e2) throw e2;
 
-      // 3) Jalons
-      const { data: jal, error: e3 } = await supabase
-        .from('jalon_projet')
-        .select(`*,jalon_agricole(*),culture:jalon_agricole(id_culture(*))`)
-        .eq('id_projet', projectId)
-        .order('date_previsionnelle', { ascending: true });
-      if (e3) throw e3;
+//       // 3) Jalons
+//       const { data: jal, error: e3 } = await supabase
+//         .from('jalon_projet')
+//         .select(`*,jalon_agricole(*),culture:jalon_agricole(id_culture(*))`)
+//         .eq('id_projet', projectId)
+//         .order('date_previsionnelle', { ascending: true });
+//       if (e3) throw e3;
 
-      setProject(p);
-      setInvestments(inv ?? []);
-      setJalons(jal ?? []);
-    } catch (err: any) {
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+//       setProject(p);
+//       setInvestments(inv ?? []);
+//       setJalons(jal ?? []);
+//     } catch (err: any) {
+//       setError(err.message);
+//     } finally {
+//       setLoading(false);
+//     }
+//   };
 
-  useEffect(() => { fetchAll(); }, [projectId]);
+//   useEffect(() => { fetchAll(); }, [projectId]);
 
-  return {
-    project,
-    investments,
-    jalons,
-    loading,
-    error,
-    refetchProject:   fetchAll,
-    refetchInvestments: fetchAll,
-    refetchJalons:    fetchAll,
-    refetchAll:       fetchAll,
-  };
-};
+//   return {
+//     project,
+//     investments,
+//     jalons,
+//     loading,
+//     error,
+//     refetchProject:   fetchAll,
+//     refetchInvestments: fetchAll,
+//     refetchJalons:    fetchAll,
+//     refetchAll:       fetchAll,
+//   };
+// };
 
 const formatDate = (dateStr: string) =>
   new Date(dateStr).toLocaleDateString('fr-FR');
@@ -109,8 +117,9 @@ type ModalDetailsProps = {
 
 export const ModalDetails = ({ projectId, isVisible, onClose, userProfile }: ModalDetailsProps) => {
   // Utilisation du hook combiné pour toutes les données
-  const {projects} = useDetails(projectId)
+  // const {projects} = useDetails(projectId)
   const { 
+    project,
     investments, 
     jalons, 
     loading, 
@@ -120,6 +129,7 @@ export const ModalDetails = ({ projectId, isVisible, onClose, userProfile }: Mod
     refetchInvestments,
     refetchJalons
   } = useProjectData(projectId);
+  const projects = project
 
   // États locaux
   const [finJal, setFinJal] = useState<boolean>(false);
@@ -313,7 +323,7 @@ export const ModalDetails = ({ projectId, isVisible, onClose, userProfile }: Mod
         
         <View className="space-y-2">
           <View className="flex-row justify-between">
-            <Text className="text-gray-600">Coût d exploitation:</Text>
+            <Text className="text-gray-600">Coût d{"\'"}exploitation:</Text>
             <Text className="font-semibold">{formatCurrency(metrics.totalCost)}</Text>
           </View>
           
@@ -659,7 +669,7 @@ export const ModalDetails = ({ projectId, isVisible, onClose, userProfile }: Mod
                     ) : (
                       <View className="p-4 bg-gray-50 rounded-lg">
                         <Text className="text-gray-500 text-center">
-                          Le projet n est pas encore en cours de production
+                          Le projet n{"\'"}est pas encore en cours de production
                         </Text>
                         {projects?.statut === 'validé' && !metrics?.isFundingComplete && (
                           <Text className="text-orange-600 text-center mt-2 text-sm">
