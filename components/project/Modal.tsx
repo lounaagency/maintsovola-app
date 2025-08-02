@@ -22,7 +22,7 @@ import {
   Alert,
   FlatList
 } from "react-native";
-import CreateProjectModal from "../CreateProjectModal";
+// import CreateProjectModal from "../CreateProjectModal";
 import { ProjectMilestonesModal } from "../ProjectMilestones";
 import { supabase } from "~/utils/supabase";
 import { CreateModal } from "../CreateModal";
