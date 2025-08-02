@@ -217,7 +217,12 @@ const ChatScreen = () => {
     const isCurrentUser = item.id_expediteur === user?.id;
 
     return (
-      <View style={[styles.messageContainer, { justifyContent: isCurrentUser ? 'flex-end' : 'flex-start' }]}>
+      <View style={[
+        styles.messageContainer, 
+        // { justifyContent: isCurrentUser ? 'flex-end' : 'flex-start' },
+        { alignItems: isCurrentUser ? 'flex-end' : 'flex-start'}
+        
+        ]}>
         <View
           style={[
             styles.messageBubble,
@@ -313,7 +318,7 @@ const ChatScreen = () => {
         <FlatList
           ref={flatListRef}
           data={messages}
-          keyExtractor={(item) => item.id_message}
+          keyExtractor={(item: Message) => item.id_message}
           renderItem={renderMessage}
           style={styles.messageList}
           contentContainerStyle={styles.messageListContent}
@@ -382,7 +387,7 @@ const styles = StyleSheet.create({
   keyboardAvoidingView: { flex: 1 },
   messageList: { flex: 1, backgroundColor: '#F6F6F6' },
   messageListContent: { paddingVertical: 8, flexGrow: 1, justifyContent: 'flex-end' },
-  messageContainer: { flexDirection: 'row', marginVertical: 2, marginHorizontal: 16 },
+  messageContainer: { flexDirection: 'column', marginVertical: 2, marginHorizontal: 16 },
   messageBubble: {
     borderRadius: 18,
     paddingHorizontal: 16,

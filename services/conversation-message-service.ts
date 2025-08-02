@@ -413,3 +413,27 @@ export async function sendMessage({
     throw error;
   }
 }
+
+export async function markMessageAsRead(id_message: number): Promise<void> {
+   
+}
+
+export async function getCountUnreadMessages(id_utilisateur: string): Promise<number> {
+  try {
+    const { count, error } = await supabase
+      .from('message')
+      .select('id_message', { count: 'exact' })
+      .eq('id_destinataire', id_utilisateur)
+      .eq('lu', false);
+
+    if (error) {
+      throw new Error(`Failed to count unread messages: ${error.message}`);
+    }
+
+    return count || 0;
+    
+  } catch (error) {
+    console.error("Error counting unread messages:", error);
+    throw error;
+  }
+}
